@@ -1,7 +1,7 @@
 'use client';
 
 import { Robot } from '../types';
-import { Battery, MapPin, Clock, Package, Zap, Wrench, WifiOff } from 'lucide-react';
+import { Battery, MapPin, Clock, Package, Zap, Wrench, WifiOff, Bot } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { Card, CardBody, Chip, Progress } from "@heroui/react";
 
@@ -14,7 +14,7 @@ interface RobotCardProps {
 const getStatusIcon = (status: Robot['status']) => {
   switch (status) {
     case 'idle':
-      return <Package className="w-4 h-4 text-success" />;
+      return <Bot className="w-4 h-4 text-success" />;
     case 'delivering':
       return <MapPin className="w-4 h-4 text-success" />;
     case 'charging':
@@ -64,14 +64,13 @@ export default function RobotCard({ robot, isSelected, onClick }: RobotCardProps
       <Card
         isPressable
         onPress={onClick}
-        className={`transition-all duration-200 w-full ${
+        className={`transition-all duration-200 w-full border-2 ${
           isSelected 
-            ? 'ring-2 shadow-lg' 
-            : 'hover:shadow-md'
+            ? 'shadow-lg' 
+            : 'hover:shadow-md border-transparent'
         }`}
         style={{
           borderColor: isSelected ? robot.color : undefined,
-          borderWidth: isSelected ? '2px' : undefined,
         }}
         shadow="sm"
       >

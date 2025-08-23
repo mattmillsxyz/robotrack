@@ -426,7 +426,7 @@ export default function RobotMapInner({ robots, selectedRobot, onRobotClick }: R
     <div className="w-full h-full rounded-xl overflow-hidden border border-gray-600/10 relative">
       <MapContainer
         center={[30.2672, -97.7431]} // Austin, Texas
-        zoom={13} // Closer zoom for Austin area
+        zoom={15} // Closer zoom for central Austin
         style={{ height: '100%', width: '100%' }}
         className="z-10"
         whenReady={() => setIsMapReady(true)}
@@ -443,7 +443,7 @@ export default function RobotMapInner({ robots, selectedRobot, onRobotClick }: R
       
       {/* Status breakdown */}
       <div 
-        className="absolute top-0 right-0 pointer-events-none z-50 text-xs text-green-500 bg-black/50 px-2 py-1"
+        className="absolute top-2 right-2 pointer-events-none z-50 text-xs text-green-500 bg-black/50 px-2 py-1 rounded-md"
         style={{ fontSize: '10px' }}
       >
         Idle: {robots.filter(r => r.status === 'idle').length} | 

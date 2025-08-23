@@ -13,6 +13,7 @@ module.exports = {
   },
   darkMode: "class",
   plugins: [
+    require('tailwind-scrollbar'),
     heroui({
       themes: {
         light: {

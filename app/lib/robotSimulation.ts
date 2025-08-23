@@ -5,17 +5,38 @@ import { SAMPLE_LOCATIONS, CHARGING_STATIONS } from './locations';
 
 
 const ROBOT_NAMES = [
-  'BOT-001'
+  'BOT-001',
+  'BOT-002',
+  'BOT-003',
+  'BOT-004',
+  'BOT-005',
+  'BOT-006',
+  'BOT-007',
+  'BOT-008'
 ];
 
 // Static robot IDs that don't change on server restart
 const ROBOT_IDS = [
-  'robot-001'
+  'robot-001',
+  'robot-002',
+  'robot-003',
+  'robot-004',
+  'robot-005',
+  'robot-006',
+  'robot-007',
+  'robot-008'
 ];
 
 // Robot colors for UI consistency
 const ROBOT_COLORS = [
-  '#3b82f6' // Blue
+  '#22c55e', // Green
+  '#f59e0b', // Yellow
+  '#8b5cf6', // Purple
+  '#0891b2', // Teal
+  '#f472b6', // Pink
+  '#10b981', // Emerald
+  '#d946ef', // Fuchsia
+  '#0ea5e9', // Sky
 ];
 
 interface RoutePoint {

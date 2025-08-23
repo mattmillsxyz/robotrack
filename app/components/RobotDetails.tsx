@@ -4,6 +4,7 @@ import { Robot } from '../types';
 import { Battery, MapPin, Clock, Package, Zap, Wrench, WifiOff, Calendar, Route, X } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { Card, CardBody, Button, Chip, Progress, Divider } from "@heroui/react";
+import { useState, useEffect } from 'react';
 
 interface RobotDetailsProps {
   robot: Robot;
@@ -54,7 +55,32 @@ const formatDate = (date: Date) => {
 };
 
 export default function RobotDetails({ robot, onClose }: RobotDetailsProps) {
-  const lastUpdate = new Date(robot.lastUpdate);
+  const [currentRobot, setCurrentRobot] = useState<Robot>(robot);
+
+  // Fetch updated robot data periodically
+  useEffect(() => {
+    const fetchRobotData = async () => {
+      try {
+        const response = await fetch(`/api/robots/${robot.id}`);
+        if (response.ok) {
+          const updatedRobot = await response.json();
+          setCurrentRobot(updatedRobot);
+        }
+      } catch (error) {
+        console.error('Failed to fetch robot data:', error);
+      }
+    };
+
+    // Fetch immediately
+    fetchRobotData();
+
+    // Then fetch every 200ms to match simulation speed
+    const interval = setInterval(fetchRobotData, 200);
+
+    return () => clearInterval(interval);
+  }, [robot.id]);
+
+  const lastUpdate = new Date(currentRobot.lastUpdate);
   const timeSinceUpdate = Date.now() - lastUpdate.getTime();
   const isRecent = timeSinceUpdate < 10000; // 10 seconds
 
@@ -68,7 +94,17 @@ export default function RobotDetails({ robot, onClose }: RobotDetailsProps) {
       <div className="p-6 rounded-lg bg-content1">
         {/* Header */}
         <div className="flex items-center justify-between mb-6">
-          <h2 className="text-xl font-semibold text-foreground">{robot.name}</h2>
+          <div className="flex items-center gap-2">
+            <h2 className="text-xl font-semibold text-foreground">{currentRobot.name}</h2>
+            <Chip 
+              color="success" 
+              variant="flat" 
+              size="sm"
+              className="text-xs"
+            >
+              Live
+            </Chip>
+          </div>
           <Button
             isIconOnly
             variant="light"
@@ -84,15 +120,15 @@ export default function RobotDetails({ robot, onClose }: RobotDetailsProps) {
         <Card className="mb-6">
           <CardBody className="p-4">
             <div className="flex items-center gap-3 mb-4">
-              {getStatusIcon(robot.status)}
+              {getStatusIcon(currentRobot.status)}
               <div>
                 <h3 className="font-medium text-foreground">Status</h3>
                 <Chip 
-                  color={getStatusColor(robot.status)} 
+                  color={getStatusColor(currentRobot.status)} 
                   variant="flat" 
                   size="sm"
                 >
-                  {robot.status.charAt(0).toUpperCase() + robot.status.slice(1)}
+                  {currentRobot.status.charAt(0).toUpperCase() + currentRobot.status.slice(1)}
                 </Chip>
               </div>
             </div>
@@ -104,25 +140,25 @@ export default function RobotDetails({ robot, onClose }: RobotDetailsProps) {
                   <span>Battery</span>
                 </div>
                 <div className="space-y-1">
-                  <p className={`text-${getBatteryColor(robot.battery)} font-medium`}>
-                    {Math.round(robot.battery)}%
+                  <p className={`text-${getBatteryColor(currentRobot.battery)} font-medium`}>
+                    {Math.round(currentRobot.battery)}%
                   </p>
                   <Progress 
-                    value={robot.battery} 
-                    color={getBatteryColor(robot.battery)}
+                    value={currentRobot.battery} 
+                    color={getBatteryColor(currentRobot.battery)}
                     size="sm"
                     className="w-full"
                   />
                 </div>
               </div>
               
-              {robot.status === 'delivering' && robot.speed > 0 && (
+              {currentRobot.status === 'delivering' && currentRobot.speed > 0 && (
                 <div>
                   <div className="flex items-center gap-2 text-foreground/60 mb-2">
                     <Route className="w-4 h-4" />
                     <span>Speed</span>
                   </div>
-                  <p className="text-primary font-medium">{robot.speed.toFixed(1)} km/h</p>
+                  <p className="text-primary font-medium">{currentRobot.speed.toFixed(1)} km/h</p>
                 </div>
               )}
             </div>
@@ -136,7 +172,7 @@ export default function RobotDetails({ robot, onClose }: RobotDetailsProps) {
               <MapPin className="w-4 h-4 text-primary" />
               <h3 className="font-medium text-foreground">Current Location</h3>
             </div>
-            <p className="text-sm text-foreground/60">{robot.location.address}</p>
+            <p className="text-sm text-foreground/60">{currentRobot.location.address}</p>
             <div className="flex items-center gap-2 mt-2">
               <Clock className="w-3 h-3 text-foreground/60" />
               <Chip 
@@ -152,7 +188,7 @@ export default function RobotDetails({ robot, onClose }: RobotDetailsProps) {
         </Card>
 
         {/* Current Delivery */}
-        {robot.currentDelivery && (
+        {currentRobot.currentDelivery && (
           <Card className="mb-6">
             <CardBody className="p-4">
               <div className="flex items-center gap-2 mb-3">
@@ -169,24 +205,24 @@ export default function RobotDetails({ robot, onClose }: RobotDetailsProps) {
                     size="sm"
                     className="mt-1"
                   >
-                    {robot.currentDelivery.status.replace('_', ' ')}
+                    {currentRobot.currentDelivery.status.replace('_', ' ')}
                   </Chip>
                 </div>
                 
                 <div>
                   <p className="text-xs text-foreground/60">Stops Remaining</p>
-                  <p className="text-sm font-medium text-foreground">{robot.currentDelivery.stops.length}</p>
+                  <p className="text-sm font-medium text-foreground">{currentRobot.currentDelivery.stops.length}</p>
                 </div>
                 
                 <div>
                   <p className="text-xs text-foreground/60">Created</p>
-                  <p className="text-sm text-foreground">{formatDate(robot.currentDelivery.createdAt)}</p>
+                  <p className="text-sm text-foreground">{formatDate(currentRobot.currentDelivery.createdAt)}</p>
                 </div>
                 
-                {robot.currentDelivery.estimatedCompletion && (
+                {currentRobot.currentDelivery.estimatedCompletion && (
                   <div>
                     <p className="text-xs text-foreground/60">Estimated Completion</p>
-                    <p className="text-sm text-foreground">{formatDate(robot.currentDelivery.estimatedCompletion)}</p>
+                    <p className="text-sm text-foreground">{formatDate(currentRobot.currentDelivery.estimatedCompletion)}</p>
                   </div>
                 )}
               </div>
@@ -202,11 +238,11 @@ export default function RobotDetails({ robot, onClose }: RobotDetailsProps) {
               <h3 className="font-medium text-foreground">Delivery History</h3>
             </div>
             
-            {robot.deliveries.length === 0 ? (
+            {currentRobot.deliveries.length === 0 ? (
               <p className="text-sm text-foreground/60">No delivery history</p>
             ) : (
               <div className="space-y-3 max-h-48 overflow-y-auto">
-                {robot.deliveries.slice(-5).reverse().map((delivery, index) => (
+                {currentRobot.deliveries.slice(-5).reverse().map((delivery, index) => (
                   <div key={delivery.id}>
                     <div className="border-l-2 border-primary/30 pl-3">
                       <div className="flex items-center justify-between">
@@ -228,7 +264,7 @@ export default function RobotDetails({ robot, onClose }: RobotDetailsProps) {
                         {delivery.stops.length} stops • {formatDate(delivery.createdAt)}
                       </p>
                     </div>
-                    {index < robot.deliveries.slice(-5).length - 1 && (
+                    {index < currentRobot.deliveries.slice(-5).length - 1 && (
                       <Divider className="my-2" />
                     )}
                   </div>

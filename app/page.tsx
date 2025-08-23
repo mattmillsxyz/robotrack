@@ -76,7 +76,7 @@ export default function Dashboard() {
           <div className="flex items-center gap-2">
             <Bot className="w-8 h-8 text-green-500" />
             <h1 className="text-2xl font-bold text-foreground text-green-500">
-              Robodash
+              Robotrack
             </h1>
           </div>
 
@@ -108,7 +108,7 @@ export default function Dashboard() {
       {/* Main Content */}
       <div className="flex h-[calc(100vh-80px)]">
         {/* Sidebar */}
-        <div className="w-80 p-6 overflow-y-auto">
+        <div className="w-80 p-6 pr-1 overflow-y-auto scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-transparent hover:scrollbar-thumb-gray-400 dark:scrollbar-thumb-gray-600 dark:hover:scrollbar-thumb-gray-500">
           <div className="mb-4">
             <h2 className="text-lg font-semibold mb-2 text-foreground">
               Robots ({robots.length})
@@ -118,7 +118,7 @@ export default function Dashboard() {
             </p>
           </div>
 
-          <div className="space-y-3">
+          <div className="space-y-2">
             {robots.map((robot) => (
               <RobotCard
                 key={robot.id}
