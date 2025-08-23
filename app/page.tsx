@@ -71,7 +71,7 @@ export default function Dashboard() {
       <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="text-center">
           <Spinner size="lg" color="primary" className="mb-4" />
-          <p className="text-foreground/60">Loading robotics dashboard...</p>
+          <p className="text-foreground/60 animate-pulse">Loading Robotrack...</p>
         </div>
       </div>
     );
