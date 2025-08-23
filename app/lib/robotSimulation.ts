@@ -100,6 +100,8 @@ class RobotSimulation {
         speed: 0,
         lastUpdate: new Date(),
         color: ROBOT_COLORS[index], // Assign robot color
+        isUnloading: false,
+        unloadingTime: 0,
       };
       
       this.robots.set(robot.id, robot);
@@ -328,6 +330,18 @@ class RobotSimulation {
     const currentSegment = robot.routeJourney[robot.currentSegmentIndex];
     if (!currentSegment) return;
 
+    // Check if robot is unloading (paused at stop)
+    if (robot.isUnloading) {
+      const unloadingTime = robot.unloadingTime || 0;
+      robot.unloadingTime = unloadingTime - 200; // 200ms per update
+      if (robot.unloadingTime <= 0) {
+        robot.isUnloading = false;
+        robot.unloadingTime = 0;
+        console.log(`${robot.name} finished unloading, continuing to next stop`);
+      }
+      return; // Don't move while unloading
+    }
+
     // Update the current delivery's first stop to reflect the current target
     if (robot.currentDelivery.stops.length > 0) {
       robot.currentDelivery.stops[0] = currentSegment.to;
@@ -352,13 +366,26 @@ class RobotSimulation {
       return;
     }
     
-    // Move along the current route segment
-    const movementSpeed = 0.01;
+    // Calculate movement speed based on robot speed and route distance
+    // Robot speed is 12 km/h = 12,000 m/h = 200 m/min = 3.33 m/s
+    // With 200ms updates, that's 0.67 meters per update
+    const robotSpeedMps = robot.speed / 3.6; // Convert km/h to m/s
+    const routeDistanceM = currentSegment.route.distance; // Distance in meters
+    const timeToComplete = routeDistanceM / robotSpeedMps; // Time in seconds
+    const updatesToComplete = timeToComplete * 5; // 5 updates per second (200ms intervals)
+    const movementSpeed = 1 / updatesToComplete; // Progress per update
+    
     robot.routeProgress += movementSpeed;
     
     if (robot.routeProgress >= 1) {
       // Arrived at destination for this segment
       console.log(`${robot.name} completed segment ${robot.currentSegmentIndex + 1}: ${currentSegment.to.address}`);
+      
+      // Start unloading simulation (pause for 3-5 seconds)
+      const unloadingDuration = Math.random() * 2000 + 3000; // 3-5 seconds
+      robot.isUnloading = true;
+      robot.unloadingTime = unloadingDuration;
+      console.log(`${robot.name} arrived at stop, unloading for ${(unloadingDuration/1000).toFixed(1)} seconds`);
       
       // Remove the completed stop from the delivery
       if (robot.currentDelivery.stops.length > 0) {
@@ -379,6 +406,8 @@ class RobotSimulation {
         robot.routeJourney = undefined;
         robot.currentSegmentIndex = undefined;
         robot.routeProgress = undefined;
+        robot.isUnloading = false;
+        robot.unloadingTime = 0;
       } else {
         // Start next segment
         const nextSegment = robot.routeJourney[robot.currentSegmentIndex];
@@ -419,16 +448,40 @@ class RobotSimulation {
     if (!robot.currentDelivery || robot.currentDelivery.stops.length === 0) return;
     if (!robot.currentRoute || robot.routeProgress === undefined) return;
 
+    // Check if robot is unloading (paused at stop)
+    if (robot.isUnloading) {
+      const unloadingTime = robot.unloadingTime || 0;
+      robot.unloadingTime = unloadingTime - 200; // 200ms per update
+      if (robot.unloadingTime <= 0) {
+        robot.isUnloading = false;
+        robot.unloadingTime = 0;
+        console.log(`${robot.name} finished unloading, continuing to next stop`);
+      }
+      return; // Don't move while unloading
+    }
+
     const currentStop = robot.currentDelivery.stops[0];
     console.log(`${robot.name} following legacy route, target: ${currentStop.address}, progress: ${robot.routeProgress.toFixed(3)}`);
     
-    // Update progress along the route
-    const movementSpeed = 0.01;
+    // Calculate movement speed based on robot speed and route distance
+    const robotSpeedMps = robot.speed / 3.6; // Convert km/h to m/s
+    const routeDistanceM = robot.currentRoute.distance; // Distance in meters
+    const timeToComplete = routeDistanceM / robotSpeedMps; // Time in seconds
+    const updatesToComplete = timeToComplete * 5; // 5 updates per second (200ms intervals)
+    const movementSpeed = 1 / updatesToComplete; // Progress per update
+    
     robot.routeProgress += movementSpeed;
     
     if (robot.routeProgress >= 1) {
       // Arrived at destination
       console.log(`${robot.name} arrived at destination: ${currentStop.address}`);
+      
+      // Start unloading simulation (pause for 3-5 seconds)
+      const unloadingDuration = Math.random() * 2000 + 3000; // 3-5 seconds
+      robot.isUnloading = true;
+      robot.unloadingTime = unloadingDuration;
+      console.log(`${robot.name} arrived at stop, unloading for ${(unloadingDuration/1000).toFixed(1)} seconds`);
+      
       robot.currentDelivery.stops.shift();
       robot.routeProgress = 0;
       
@@ -437,6 +490,8 @@ class RobotSimulation {
         robot.status = 'idle';
         robot.currentDelivery = undefined;
         robot.currentRoute = undefined;
+        robot.isUnloading = false;
+        robot.unloadingTime = 0;
         console.log(`${robot.name} completed delivery with battery at ${robot.battery.toFixed(2)}%`);
       }
       return;

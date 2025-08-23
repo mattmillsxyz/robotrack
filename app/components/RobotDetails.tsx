@@ -190,6 +190,20 @@ export default function RobotDetails({ robot, onClose }: RobotDetailsProps) {
                   <p className="text-sm font-medium text-foreground">{robot.currentDelivery.stops.length}</p>
                 </div>
                 
+                {robot.isUnloading && (
+                  <div>
+                    <p className="text-xs text-foreground/60">Status</p>
+                    <Chip 
+                      color="warning" 
+                      variant="flat" 
+                      size="sm"
+                      className="mt-1"
+                    >
+                      Unloading...
+                    </Chip>
+                  </div>
+                )}
+                
                 <div>
                   <p className="text-xs text-foreground/60">Created</p>
                   <p className="text-sm text-foreground">{formatDate(robot.currentDelivery.createdAt)}</p>

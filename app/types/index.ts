@@ -41,6 +41,8 @@ export interface Robot {
   routeJourney?: RouteSegment[]; // Full journey as array of route segments
   currentSegmentIndex?: number; // Current segment being followed
   color: string; // Robot's unique color for UI
+  isUnloading?: boolean; // Whether robot is currently unloading at a stop
+  unloadingTime?: number; // Remaining unloading time in milliseconds
 }
 
 export interface RobotUpdate {
