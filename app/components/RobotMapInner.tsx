@@ -23,8 +23,17 @@ function MapUpdater({ selectedRobot }: { selectedRobot?: Robot }) {
 function RobotRouting({ selectedRobot }: { selectedRobot?: Robot }) {
   const map = useMap();
   const routeRefs = useRef<Map<string, L.Polyline>>(new Map());
+  const lastSelectedRobotRef = useRef<string | null>(null);
   
   useEffect(() => {
+    // Only redraw routes if the selected robot has actually changed
+    const currentRobotId = selectedRobot?.id || null;
+    if (currentRobotId === lastSelectedRobotRef.current) {
+      return; // Skip redraw if same robot is selected
+    }
+    
+    lastSelectedRobotRef.current = currentRobotId;
+    
     // Clear existing routes
     routeRefs.current.forEach((polyline) => {
       map.removeLayer(polyline);
@@ -86,7 +95,7 @@ function RobotRouting({ selectedRobot }: { selectedRobot?: Robot }) {
       });
       routeRefs.current.clear();
     };
-  }, [map, selectedRobot]);
+  }, [selectedRobot?.id]); // Only depend on robot ID, not the entire map object
 
   return null;
 }
