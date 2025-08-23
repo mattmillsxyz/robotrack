@@ -66,22 +66,30 @@ export default function RobotCard({ robot, isSelected, onClick }: RobotCardProps
         onPress={onClick}
         className={`transition-all duration-200 w-full ${
           isSelected 
-            ? 'ring-2 ring-primary shadow-lg' 
+            ? 'ring-2 shadow-lg' 
             : 'hover:shadow-md'
         }`}
+        style={{
+          borderColor: isSelected ? robot.color : undefined,
+          borderWidth: isSelected ? '2px' : undefined,
+        }}
         shadow="sm"
       >
         <CardBody className="p-4">
           <div className="flex items-center justify-between mb-3">
             <div className="flex items-center gap-2">
+              <div 
+                className="w-3 h-3 rounded-full border border-white/20"
+                style={{ backgroundColor: robot.color }}
+              />
               {getStatusIcon(robot.status)}
               <h3 className="font-semibold text-sm text-foreground">{robot.name}</h3>
             </div>
-            <Chip 
+            {/* <Chip 
               color={getStatusColor(robot.status)} 
               variant="dot" 
               size="sm"
-            />
+            /> */}
           </div>
 
           <div className="space-y-3">

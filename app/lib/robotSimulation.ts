@@ -13,6 +13,11 @@ const ROBOT_IDS = [
   'robot-001'
 ];
 
+// Robot colors for UI consistency
+const ROBOT_COLORS = [
+  '#3b82f6' // Blue
+];
+
 interface RoutePoint {
   lat: number;
   lng: number;
@@ -73,6 +78,7 @@ class RobotSimulation {
         deliveries: [],
         speed: 0,
         lastUpdate: new Date(),
+        color: ROBOT_COLORS[index], // Assign robot color
       };
       
       this.robots.set(robot.id, robot);

@@ -40,6 +40,7 @@ export interface Robot {
   routeProgress?: number; // Progress along current route (0-1) (legacy)
   routeJourney?: RouteSegment[]; // Full journey as array of route segments
   currentSegmentIndex?: number; // Current segment being followed
+  color: string; // Robot's unique color for UI
 }
 
 export interface RobotUpdate {

@@ -57,15 +57,6 @@ export async function POST(request: NextRequest) {
 
     const osrmData = await response.json();
     
-    console.log('OSRM response status:', response.status);
-    
-    // Save OSRM response to file for debugging
-    const fs = require('fs');
-    const path = require('path');
-    const debugFile = path.join(process.cwd(), 'osrm-debug.json');
-    fs.writeFileSync(debugFile, JSON.stringify(osrmData, null, 2));
-    console.log('OSRM response saved to:', debugFile);
-    
     if (osrmData.code !== 'Ok') {
       console.error('OSRM route calculation failed:', osrmData.message);
       // Fallback to straight-line route

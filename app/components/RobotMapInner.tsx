@@ -28,7 +28,7 @@ function MapUpdater({ robots, selectedRobot, onRobotClick }: RobotMapInnerProps)
 }
 
 // Component to handle routing for robots
-function RobotRouting({ robots }: { robots: Robot[] }) {
+function RobotRouting({ robots, selectedRobot }: { robots: Robot[]; selectedRobot?: Robot }) {
   const map = useMap();
   const routeRefs = useRef<Map<string, L.Polyline>>(new Map());
   
@@ -39,34 +39,16 @@ function RobotRouting({ robots }: { robots: Robot[] }) {
     });
     routeRefs.current.clear();
 
-    robots.forEach((robot) => {
-      if (robot.status === 'delivering' && robot.currentDelivery) {
-        // Use route journey if available, otherwise fall back to current route
-        if (robot.routeJourney && robot.currentSegmentIndex !== undefined) {
-          // Display the full route journey
-          robot.routeJourney.forEach((segment, index) => {
-            const validCoordinates = segment.route.coordinates.filter(coord => 
-              coord && coord.length === 2 && 
-              typeof coord[0] === 'number' && typeof coord[1] === 'number' &&
-              Math.abs(coord[0]) > 0.1 || Math.abs(coord[1]) > 0.1
-            );
-            
-            if (validCoordinates.length >= 2) {
-              const routeCoordinates = validCoordinates.map(coord => L.latLng(coord[1], coord[0]));
-              const color = segment.type === 'charging' ? '#ff8c00' : '#00ff00'; // Orange for charging, green for delivery
-              const polyline = L.polyline(routeCoordinates, { 
-                color: color, 
-                opacity: 0.8, 
-                weight: 4 
-              }).addTo(map);
-              
-              const routeKey = `${robot.id}-segment-${index}`;
-              routeRefs.current.set(routeKey, polyline);
-            }
-          });
-        } else if (robot.currentRoute) {
-          // Legacy: display single route
-          const validCoordinates = robot.currentRoute.coordinates.filter(coord => 
+    // Only show routes for the selected robot
+    if (!selectedRobot) return;
+
+    const robot = selectedRobot;
+    if (robot.status === 'delivering' && robot.currentDelivery) {
+      // Use route journey if available, otherwise fall back to current route
+      if (robot.routeJourney && robot.currentSegmentIndex !== undefined) {
+        // Display the full route journey
+        robot.routeJourney.forEach((segment, index) => {
+          const validCoordinates = segment.route.coordinates.filter(coord => 
             coord && coord.length === 2 && 
             typeof coord[0] === 'number' && typeof coord[1] === 'number' &&
             Math.abs(coord[0]) > 0.1 || Math.abs(coord[1]) > 0.1
@@ -74,18 +56,37 @@ function RobotRouting({ robots }: { robots: Robot[] }) {
           
           if (validCoordinates.length >= 2) {
             const routeCoordinates = validCoordinates.map(coord => L.latLng(coord[1], coord[0]));
-            const color = '#00ff00'; // Green for legacy routes
+            const color = segment.type === 'charging' ? '#ff8c00' : robot.color; // Use robot color for delivery routes
             const polyline = L.polyline(routeCoordinates, { 
               color: color, 
               opacity: 0.8, 
               weight: 4 
             }).addTo(map);
             
-            routeRefs.current.set(robot.id, polyline);
+            const routeKey = `${robot.id}-segment-${index}`;
+            routeRefs.current.set(routeKey, polyline);
           }
+        });
+      } else if (robot.currentRoute) {
+        // Legacy: display single route
+        const validCoordinates = robot.currentRoute.coordinates.filter(coord => 
+          coord && coord.length === 2 && 
+          typeof coord[0] === 'number' && typeof coord[1] === 'number' &&
+          Math.abs(coord[0]) > 0.1 || Math.abs(coord[1]) > 0.1
+        );
+        
+        if (validCoordinates.length >= 2) {
+          const routeCoordinates = validCoordinates.map(coord => L.latLng(coord[1], coord[0]));
+          const polyline = L.polyline(routeCoordinates, { 
+            color: robot.color, // Use robot color
+            opacity: 0.8, 
+            weight: 4 
+          }).addTo(map);
+          
+          routeRefs.current.set(robot.id, polyline);
         }
       }
-    });
+    }
 
     return () => {
       routeRefs.current.forEach((polyline) => {
@@ -93,7 +94,7 @@ function RobotRouting({ robots }: { robots: Robot[] }) {
       });
       routeRefs.current.clear();
     };
-  }, [robots, map]);
+  }, [robots, map, selectedRobot]);
 
   return null;
 }
@@ -228,30 +229,21 @@ function LocationMarkers({ robots }: { robots: Robot[] }) {
 function RobotMarkers({ robots, onRobotClick }: { robots: Robot[]; onRobotClick: (robot: Robot) => void }) {
   const prevPositions = useRef<Map<string, { lat: number; lng: number }>>(new Map());
 
-  const createRobotIcon = (status: Robot['status'], robotId: string) => {
+  const createRobotIcon = (robot: Robot) => {
     const getIconColor = () => {
-      switch (status) {
-        case 'idle': return '#00ff00';
-        case 'delivering': return '#00ff00';
-        case 'charging': return '#f59e0b';
-        case 'maintenance': return '#f97316';
-        case 'offline': return '#ef4444';
-        default: return '#6b7280';
-      }
+      // Use robot's color for the main marker, with status-based accent
+      return robot.color;
     };
 
     // Calculate rotation based on movement direction
-    const prevPos = prevPositions.current.get(robotId);
+    const prevPos = prevPositions.current.get(robot.id);
     let rotation = 0;
     
     if (prevPos) {
-      const robot = robots.find(r => r.id === robotId);
-      if (robot) {
-        const dx = robot.location.lng - prevPos.lng;
-        const dy = robot.location.lat - prevPos.lat;
-        if (Math.abs(dx) > 0.00001 || Math.abs(dy) > 0.00001) {
-          rotation = Math.atan2(dy, dx) * 180 / Math.PI;
-        }
+      const dx = robot.location.lng - prevPos.lng;
+      const dy = robot.location.lat - prevPos.lat;
+      if (Math.abs(dx) > 0.00001 || Math.abs(dy) > 0.00001) {
+        rotation = Math.atan2(dy, dx) * 180 / Math.PI;
       }
     }
 
@@ -348,7 +340,7 @@ function RobotMarkers({ robots, onRobotClick }: { robots: Robot[]; onRobotClick:
         <Marker
           key={robot.id}
           position={[robot.location.lat, robot.location.lng]}
-          icon={createRobotIcon(robot.status, robot.id)}
+          icon={createRobotIcon(robot)}
           eventHandlers={{
             click: () => onRobotClick(robot),
           }}
@@ -444,7 +436,7 @@ export default function RobotMapInner({ robots, selectedRobot, onRobotClick }: R
           url="https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png"
         />
         <RobotMarkers robots={robots} onRobotClick={onRobotClick} />
-        <RobotRouting robots={robots} />
+        <RobotRouting robots={robots} selectedRobot={selectedRobot} />
         <LocationMarkers robots={robots} />
         <MapUpdater robots={robots} selectedRobot={selectedRobot} onRobotClick={onRobotClick} />
       </MapContainer>
