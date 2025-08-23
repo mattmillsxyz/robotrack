@@ -13,9 +13,7 @@ import {
   Button,
   Select,
   SelectItem,
-  Input,
   Chip,
-  Spinner,
 } from "@heroui/react";
 
 interface DeliveryFormProps {
@@ -229,7 +227,7 @@ export default function DeliveryForm({
           </Button>
           <Button
             color="success"
-            onPress={() => handleSubmit(new Event("submit") as any)}
+            onPress={() => handleSubmit(new Event("submit") as unknown as React.FormEvent)}
             isLoading={isLoading}
             isDisabled={!selectedRobot || selectedStops.length === 0}
             startContent={!isLoading && <Send className="w-4 h-4" />}

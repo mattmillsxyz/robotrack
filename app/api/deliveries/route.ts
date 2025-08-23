@@ -89,7 +89,7 @@ export async function POST(request: NextRequest) {
       
       // Calculate route from last stop to nearest charging station
       const lastStop = stops[stops.length - 1];
-      const chargingStations = robotSimulation.getChargingStations();
+      // const chargingStations = robotSimulation.getChargingStations(); // Unused variable
       const nearestChargingStation = robotSimulation.findNearestChargingStation(lastStop);
       
       if (nearestChargingStation) {

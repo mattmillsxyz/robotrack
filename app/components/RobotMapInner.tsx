@@ -1,11 +1,11 @@
 'use client';
 
-import React, { useEffect, useState, useRef } from 'react';
+import React, { useEffect, useRef } from 'react';
 import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet';
 import L from 'leaflet';
-import { Robot, Location } from '../types';
+import { Robot } from '../types';
 import { SAMPLE_LOCATIONS, CHARGING_STATIONS } from '../lib/locations';
-import { Package, MapPin, Zap, Wrench, WifiOff } from 'lucide-react';
+// import { Package, MapPin, Zap, Wrench, WifiOff } from 'lucide-react'; // Unused imports
 
 interface RobotMapInnerProps {
   robots: Robot[];
@@ -14,21 +14,13 @@ interface RobotMapInnerProps {
 }
 
 // Component to handle map updates when robots change
-function MapUpdater({ robots, selectedRobot, onRobotClick }: RobotMapInnerProps) {
-  const map = useMap();
-
-  // Only focus on selected robot, no auto-fitting bounds
-  useEffect(() => {
-    if (selectedRobot) {
-      map.setView([selectedRobot.location.lat, selectedRobot.location.lng], 15);
-    }
-  }, [selectedRobot, map]);
-
+function MapUpdater({ selectedRobot }: { selectedRobot?: Robot }) {
+  // Removed automatic map movement - map should stay where user positioned it
   return null;
 }
 
 // Component to handle routing for robots
-function RobotRouting({ robots, selectedRobot }: { robots: Robot[]; selectedRobot?: Robot }) {
+function RobotRouting({ selectedRobot }: { selectedRobot?: Robot }) {
   const map = useMap();
   const routeRefs = useRef<Map<string, L.Polyline>>(new Map());
   
@@ -94,7 +86,7 @@ function RobotRouting({ robots, selectedRobot }: { robots: Robot[]; selectedRobo
       });
       routeRefs.current.clear();
     };
-  }, [robots, map, selectedRobot]);
+  }, [map, selectedRobot]);
 
   return null;
 }
@@ -227,7 +219,7 @@ function LocationMarkers({ robots }: { robots: Robot[] }) {
 
 // Component to create robot markers
 function RobotMarkers({ robots, onRobotClick }: { robots: Robot[]; onRobotClick: (robot: Robot) => void }) {
-  const prevPositions = useRef<Map<string, { lat: number; lng: number }>>(new Map());
+  // const prevPositions = useRef<Map<string, { lat: number; lng: number }>>(new Map()); // Unused variable
 
   const createRobotIcon = (robot: Robot) => {
     const getIconColor = () => {
@@ -236,16 +228,16 @@ function RobotMarkers({ robots, onRobotClick }: { robots: Robot[]; onRobotClick:
     };
 
     // Calculate rotation based on movement direction
-    const prevPos = prevPositions.current.get(robot.id);
-    let rotation = 0;
+    // const prevPos = prevPositions.current.get(robot.id); // Unused variable
+    // let rotation = 0; // Unused variable
     
-    if (prevPos) {
-      const dx = robot.location.lng - prevPos.lng;
-      const dy = robot.location.lat - prevPos.lat;
-      if (Math.abs(dx) > 0.00001 || Math.abs(dy) > 0.00001) {
-        rotation = Math.atan2(dy, dx) * 180 / Math.PI;
-      }
-    }
+    // if (prevPos) {
+    //   const dx = robot.location.lng - prevPos.lng;
+    //   const dy = robot.location.lat - prevPos.lat;
+    //   if (Math.abs(dx) > 0.00001 || Math.abs(dy) > 0.00001) {
+    //     rotation = Math.atan2(dy, dx) * 180 / Math.PI;
+    //   }
+    // }
 
     return L.divIcon({
       className: 'custom-robot-icon',
@@ -275,34 +267,34 @@ function RobotMarkers({ robots, onRobotClick }: { robots: Robot[]; onRobotClick:
     });
   };
 
-  const createChargingStationIcon = () => {
-    return L.divIcon({
-      className: 'charging-station-icon',
-      html: `
-        <div style="
-          width: 16px;
-          height: 16px;
-          background: #f59e0b;
-          border: 2px solid white;
-          border-radius: 50%;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          box-shadow: 0 2px 8px rgba(0,0,0,0.3);
-          position: relative;
-        ">
-          <div style="
-            width: 6px;
-            height: 6px;
-            background: white;
-            border-radius: 50%;
-          "></div>
-        </div>
-      `,
-      iconSize: [16, 16],
-      iconAnchor: [8, 8],
-    });
-  };
+  // const createChargingStationIcon = () => { // Unused function
+  //   return L.divIcon({
+  //     className: 'charging-station-icon',
+  //     html: `
+  //       <div style="
+  //         width: 16px;
+  //         height: 16px;
+  //         background: #f59e0b;
+  //         border: 2px solid white;
+  //         border-radius: 50%;
+  //         display: flex;
+  //         align-items: center;
+  //         justify-content: center;
+  //         box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+  //         position: relative;
+  //       ">
+  //         <div style="
+  //           width: 6px;
+  //           height: 6px;
+  //           background: white;
+  //           border-radius: 50%;
+  //         "></div>
+  //       </div>
+  //     `,
+  //     iconSize: [16, 16],
+  //     iconAnchor: [8, 8],
+  //   });
+  // };
 
   const getStatusIcon = (status: Robot['status']) => {
     switch (status) {
@@ -315,23 +307,23 @@ function RobotMarkers({ robots, onRobotClick }: { robots: Robot[]; onRobotClick:
     }
   };
 
-  // Update previous positions
-  useEffect(() => {
-    robots.forEach(robot => {
-      prevPositions.current.set(robot.id, { lat: robot.location.lat, lng: robot.location.lng });
-    });
-  }, [robots]);
+  // Update previous positions (commented out due to unused variable)
+  // useEffect(() => {
+  //   robots.forEach(robot => {
+  //     prevPositions.current.set(robot.id, { lat: robot.location.lat, lng: robot.location.lng });
+  //   });
+  // }, []);
 
   // Get charging stations from simulation
-  const [chargingStations, setChargingStations] = useState<Location[]>([]);
+  // const [chargingStations, setChargingStations] = useState<Location[]>([]); // Unused state
 
-  useEffect(() => {
-    // Fetch charging stations
-    fetch('/api/charging-stations')
-      .then(res => res.json())
-      .then((stations: Location[]) => setChargingStations(stations))
-      .catch(() => setChargingStations([]));
-  }, []);
+  // useEffect(() => {
+  //   // Fetch charging stations
+  //   fetch('/api/charging-stations')
+  //     .then(res => res.json())
+  //     .then((stations: Location[]) => setChargingStations(stations))
+  //     .catch(() => setChargingStations([]));
+  // }, []);
 
   return (
     <>
@@ -420,7 +412,7 @@ function RobotMarkers({ robots, onRobotClick }: { robots: Robot[]; onRobotClick:
 }
 
 export default function RobotMapInner({ robots, selectedRobot, onRobotClick }: RobotMapInnerProps) {
-  const [isMapReady, setIsMapReady] = useState(false);
+  // const [isMapReady, setIsMapReady] = useState(false); // Unused state
 
   return (
     <div className="w-full h-full rounded-xl overflow-hidden border border-gray-600/10 relative">
@@ -429,16 +421,16 @@ export default function RobotMapInner({ robots, selectedRobot, onRobotClick }: R
         zoom={15} // Closer zoom for central Austin
         style={{ height: '100%', width: '100%' }}
         className="z-10"
-        whenReady={() => setIsMapReady(true)}
+        whenReady={() => {}}
       >
         <TileLayer
           attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
           url="https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png"
         />
         <RobotMarkers robots={robots} onRobotClick={onRobotClick} />
-        <RobotRouting robots={robots} selectedRobot={selectedRobot} />
+        <RobotRouting selectedRobot={selectedRobot} />
         <LocationMarkers robots={robots} />
-        <MapUpdater robots={robots} selectedRobot={selectedRobot} onRobotClick={onRobotClick} />
+        <MapUpdater selectedRobot={selectedRobot} />
       </MapContainer>
       
       {/* Status breakdown */}

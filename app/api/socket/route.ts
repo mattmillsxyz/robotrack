@@ -1,6 +1,4 @@
-import { NextRequest } from 'next/server';
-import { Server as NetServer } from 'http';
-import { Server as SocketIOServer } from 'socket.io';
+// import { NextRequest } from 'next/server'; // Unused import
 import { robotSimulation } from '../../lib/robotSimulation';
 
 export const dynamic = 'force-dynamic';
@@ -8,7 +6,7 @@ export const dynamic = 'force-dynamic';
 // Track if simulation is already started
 let simulationStarted = false;
 
-export async function GET(req: NextRequest) {
+export async function GET() {
   try {
     // Check if we're in a server environment
     if (typeof window !== 'undefined') {

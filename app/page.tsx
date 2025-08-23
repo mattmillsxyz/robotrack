@@ -6,9 +6,9 @@ import RobotCard from "./components/RobotCard";
 import RobotMap from "./components/RobotMap";
 import RobotDetails from "./components/RobotDetails";
 import DeliveryForm from "./components/DeliveryForm";
-import { Bot, Package, Plus, Wifi, WifiOff } from "lucide-react";
+import { Bot, Plus, Wifi } from "lucide-react";
 import { AnimatePresence } from "framer-motion";
-import { Button, Card, CardBody, Chip, Spinner } from "@heroui/react";
+import { Button, Chip, Spinner } from "@heroui/react";
 
 export default function Dashboard() {
   const [robots, setRobots] = useState<Robot[]>([]);
@@ -16,6 +16,30 @@ export default function Dashboard() {
   const [showDeliveryForm, setShowDeliveryForm] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [lastUpdate, setLastUpdate] = useState<Date>(new Date());
+
+  const fetchRobots = async () => {
+    try {
+      const response = await fetch("/api/robots");
+      if (!response.ok) {
+        throw new Error("Failed to fetch robots");
+      }
+      const robotsData = await response.json();
+      setRobots(robotsData);
+      
+      // Update selected robot if it exists
+      setSelectedRobot(currentSelected => {
+        if (currentSelected) {
+          const updatedSelectedRobot = robotsData.find((r: Robot) => r.id === currentSelected.id);
+          return updatedSelectedRobot || currentSelected;
+        }
+        return currentSelected;
+      });
+    } catch (error) {
+      console.error("Failed to fetch robots:", error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   // Fetch robots data periodically
   useEffect(() => {
@@ -29,21 +53,6 @@ export default function Dashboard() {
 
     return () => clearInterval(interval);
   }, []);
-
-  const fetchRobots = async () => {
-    try {
-      const response = await fetch("/api/robots");
-      if (!response.ok) {
-        throw new Error("Failed to fetch robots");
-      }
-      const robotsData = await response.json();
-      setRobots(robotsData);
-    } catch (error) {
-      console.error("Failed to fetch robots:", error);
-    } finally {
-      setIsLoading(false);
-    }
-  };
 
   const handleRobotClick = (robot: Robot) => {
     setSelectedRobot(robot);

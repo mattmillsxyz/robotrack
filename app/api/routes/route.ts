@@ -98,7 +98,7 @@ export async function POST(request: NextRequest) {
           console.error('Error decoding polyline:', error);
           // Fallback to waypoints
           if (osrmData.waypoints && osrmData.waypoints.length > 0) {
-            routeCoordinates.push(...osrmData.waypoints.map((waypoint: any) => 
+            routeCoordinates.push(...osrmData.waypoints.map((waypoint: { location: [number, number] }) => 
               waypoint.location as [number, number]
             ));
           } else {
@@ -108,7 +108,7 @@ export async function POST(request: NextRequest) {
       } else {
         console.log('No polyline geometry, using waypoints');
         if (osrmData.waypoints && osrmData.waypoints.length > 0) {
-          routeCoordinates.push(...osrmData.waypoints.map((waypoint: any) => 
+          routeCoordinates.push(...osrmData.waypoints.map((waypoint: { location: [number, number] }) => 
             waypoint.location as [number, number]
           ));
         } else {
@@ -118,7 +118,7 @@ export async function POST(request: NextRequest) {
     } else {
       console.log('No route geometry found, using waypoints');
       if (osrmData.waypoints && osrmData.waypoints.length > 0) {
-        routeCoordinates.push(...osrmData.waypoints.map((waypoint: any) => 
+        routeCoordinates.push(...osrmData.waypoints.map((waypoint: { location: [number, number] }) => 
           waypoint.location as [number, number]
         ));
       } else {
@@ -157,38 +157,39 @@ function calculateStraightLineDistance(waypoints: Location[]): number {
   return totalDistance;
 }
 
-// Helper function to decode Google polyline format
-function decodePolyline(encoded: string): [number, number][] {
-  const coordinates: [number, number][] = [];
-  let index = 0, len = encoded.length;
-  let lat = 0, lng = 0;
+// Helper function to decode Google polyline format (unused but kept for future use)
+// function decodePolyline(encoded: string): [number, number][] {
+//   const coordinates: [number, number][] = [];
+//   let index = 0;
+//   const len = encoded.length;
+//   let lat = 0, lng = 0;
 
-  while (index < len) {
-    let shift = 0, result = 0;
+//   while (index < len) {
+//     let shift = 0, result = 0;
 
-    do {
-      let b = encoded.charCodeAt(index++) - 63;
-      result |= (b & 0x1f) << shift;
-      shift += 5;
-    } while (result >= 0x20);
+//     do {
+//       const b = encoded.charCodeAt(index++) - 63;
+//       result |= (b & 0x1f) << shift;
+//       shift += 5;
+//     } while (result >= 0x20);
 
-    let dlat = ((result & 1) ? ~(result >> 1) : (result >> 1));
-    lat += dlat;
+//     const dlat = ((result & 1) ? ~(result >> 1) : (result >> 1));
+//     lat += dlat;
 
-    shift = 0;
-    result = 0;
+//     shift = 0;
+//     result = 0;
 
-    do {
-      let b = encoded.charCodeAt(index++) - 63;
-      result |= (b & 0x1f) << shift;
-      shift += 5;
-    } while (result >= 0x20);
+//     do {
+//       const b = encoded.charCodeAt(index++) - 63;
+//       result |= (b & 0x1f) << shift;
+//       shift += 5;
+//     } while (result >= 0x20);
 
-    let dlng = ((result & 1) ? ~(result >> 1) : (result >> 1));
-    lng += dlng;
+//     const dlng = ((result & 1) ? ~(result >> 1) : (result >> 1));
+//     lng += dlng;
 
-    coordinates.push([lng / 1e5, lat / 1e5]);
-  }
+//     coordinates.push([lng / 1e5, lat / 1e5]);
+//   }
 
-  return coordinates;
-}
+//   return coordinates;
+// }

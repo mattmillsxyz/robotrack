@@ -1,4 +1,4 @@
-import { Robot, Location, Delivery, RobotUpdate, Route } from '../types';
+import { Robot, Location, Delivery, Route, RouteSegment } from '../types';
 import { v4 as uuidv4 } from 'uuid'; // Still needed for delivery IDs
 import { SAMPLE_LOCATIONS, CHARGING_STATIONS } from './locations';
 
@@ -56,7 +56,7 @@ interface RobotRoute {
 class RobotSimulation {
   private robots: Map<string, Robot> = new Map();
   private simulationInterval: NodeJS.Timeout | null = null;
-  private io: any = null;
+  private io: unknown = null;
   private robotRoutes: Map<string, RobotRoute> = new Map();
 
   constructor() {
@@ -72,7 +72,7 @@ class RobotSimulation {
     console.log('Simulation reset complete');
   }
 
-  setIO(io: any) {
+  setIO(io: unknown) {
     this.io = io;
   }
 
@@ -127,7 +127,6 @@ class RobotSimulation {
   }
 
   private updateRobots() {
-    const now = Date.now();
     const statusBreakdown = { idle: 0, delivering: 0, charging: 0, maintenance: 0, offline: 0 };
 
     this.robots.forEach((robot) => {
@@ -355,12 +354,17 @@ class RobotSimulation {
     
     // Move along the current route segment
     const movementSpeed = 0.01;
-    const oldProgress = robot.routeProgress;
     robot.routeProgress += movementSpeed;
     
     if (robot.routeProgress >= 1) {
       // Arrived at destination for this segment
       console.log(`${robot.name} completed segment ${robot.currentSegmentIndex + 1}: ${currentSegment.to.address}`);
+      
+      // Remove the completed stop from the delivery
+      if (robot.currentDelivery.stops.length > 0) {
+        robot.currentDelivery.stops.shift();
+        console.log(`${robot.name} removed completed stop, ${robot.currentDelivery.stops.length} stops remaining`);
+      }
       
       // Move to next segment
       robot.currentSegmentIndex++;
@@ -495,7 +499,6 @@ class RobotSimulation {
     
     // Move along the route - faster movement
     const movementSpeed = 0.03; // Faster for visible movement
-    const currentPoint = route.points[route.currentPointIndex];
     const nextPoint = route.points[route.currentPointIndex + 1];
     
     console.log(`${robot.name} route progress: ${route.currentPointIndex}/${route.points.length}, progress: ${route.progress.toFixed(3)}`);
@@ -661,7 +664,7 @@ class RobotSimulation {
     const delivery: Delivery = {
       id: uuidv4(),
       stops: [...stops],
-      status: 'pending',
+      status: 'in_progress',
       createdAt: new Date(),
       estimatedCompletion: new Date(Date.now() + Math.random() * 300000 + 60000),
     };
@@ -680,7 +683,7 @@ class RobotSimulation {
     const delivery: Delivery = {
       id: uuidv4(),
       stops: [...stops],
-      status: 'pending',
+      status: 'in_progress',
       createdAt: new Date(),
       estimatedCompletion: new Date(Date.now() + route.duration * 1000), // Use actual route duration
       route: route,
@@ -695,14 +698,14 @@ class RobotSimulation {
     return delivery;
   }
 
-  createDeliveryWithRouteJourney(robotId: string, stops: Location[], routeJourney: any[]): Delivery | null {
+  createDeliveryWithRouteJourney(robotId: string, stops: Location[], routeJourney: RouteSegment[]): Delivery | null {
     const robot = this.robots.get(robotId);
     if (!robot || robot.status !== 'idle' || robot.battery < 90) return null;
 
     const delivery: Delivery = {
       id: uuidv4(),
       stops: [...stops],
-      status: 'pending',
+      status: 'in_progress',
       createdAt: new Date(),
       estimatedCompletion: new Date(Date.now() + 300000), // 5 minutes estimate
     };

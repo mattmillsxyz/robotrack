@@ -1,8 +1,6 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
-import { Robot, Location } from '../types';
-import { Package, MapPin, Zap, Wrench, WifiOff } from 'lucide-react';
+import { Robot } from '../types';
 import dynamic from 'next/dynamic';
 
 // Create a dynamic component wrapper for the entire map

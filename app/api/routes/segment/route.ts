@@ -86,7 +86,7 @@ export async function POST(request: NextRequest) {
           console.error('Error decoding polyline:', error);
           // Fallback to waypoints
           if (osrmData.waypoints && osrmData.waypoints.length > 0) {
-            routeCoordinates.push(...osrmData.waypoints.map((waypoint: any) => 
+            routeCoordinates.push(...osrmData.waypoints.map((waypoint: { location: [number, number] }) => 
               waypoint.location as [number, number]
             ));
           } else {
@@ -96,7 +96,7 @@ export async function POST(request: NextRequest) {
       } else {
         console.log('No polyline geometry, using waypoints');
         if (osrmData.waypoints && osrmData.waypoints.length > 0) {
-          routeCoordinates.push(...osrmData.waypoints.map((waypoint: any) => 
+          routeCoordinates.push(...osrmData.waypoints.map((waypoint: { location: [number, number] }) => 
             waypoint.location as [number, number]
           ));
         } else {
@@ -106,7 +106,7 @@ export async function POST(request: NextRequest) {
     } else {
       console.log('No route geometry found, using waypoints');
       if (osrmData.waypoints && osrmData.waypoints.length > 0) {
-        routeCoordinates.push(...osrmData.waypoints.map((waypoint: any) => 
+        routeCoordinates.push(...osrmData.waypoints.map((waypoint: { location: [number, number] }) => 
           waypoint.location as [number, number]
         ));
       } else {
