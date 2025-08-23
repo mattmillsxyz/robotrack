@@ -2579,6 +2579,13 @@
   dependencies:
     undici-types "~6.21.0"
 
+"@types/polyline@^0.1.32":
+  version "0.1.32"
+  resolved "https://registry.yarnpkg.com/@types/polyline/-/polyline-0.1.32.tgz#9b65a9083bd7372e3845a086b629e8a9817b647d"
+  integrity sha512-EC4sIW6rxpX7KD0cmAe/VVhQOR8T1HX8/LEDZ88Gk6ULwd/EiQkVdi8Mz7Yyq81EycU8IMbOyqFEqtna2zEtsA==
+  dependencies:
+    "@types/geojson" "*"
+
 "@types/react-dom@^19":
   version "19.1.7"
   resolved "https://registry.yarnpkg.com/@types/react-dom/-/react-dom-19.1.7.tgz#2863f2aa89e023592b981204ef92c5221b286410"
@@ -4583,6 +4590,11 @@ picomatch@^4.0.2:
   version "4.0.3"
   resolved "https://registry.yarnpkg.com/picomatch/-/picomatch-4.0.3.tgz#796c76136d1eead715db1e7bad785dedd695a042"
   integrity sha512-5gTmgEY/sqK6gFXLIsQNH19lWb4ebPDLA4SdLP7dsWkIXHWlG66oPuVvXSGFPppYZz8ZDZq0dYYrbHfBCVUb1Q==
+
+polyline@^0.2.0:
+  version "0.2.0"
+  resolved "https://registry.yarnpkg.com/polyline/-/polyline-0.2.0.tgz#4f2b716ca81134a6cbaa488975d236ecb1cc2840"
+  integrity sha512-rCJSkIHWZ/HOUoEWgjZ1DrRjLpTeTjgaktyJV0yhm8PugM5sKoavNjUHtI/amjsTn/Tq+Q3IIAuBD/dUSsWwxQ==
 
 possible-typed-array-names@^1.0.0:
   version "1.1.0"

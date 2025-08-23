@@ -1,9 +1,10 @@
 'use client';
 
-import { useEffect, useState, useRef } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet';
 import L from 'leaflet';
 import { Robot, Location } from '../types';
+import { SAMPLE_LOCATIONS, CHARGING_STATIONS } from '../lib/locations';
 import { Package, MapPin, Zap, Wrench, WifiOff } from 'lucide-react';
 
 interface RobotMapInnerProps {
@@ -22,6 +23,203 @@ function MapUpdater({ robots, selectedRobot, onRobotClick }: RobotMapInnerProps)
       map.setView([selectedRobot.location.lat, selectedRobot.location.lng], 15);
     }
   }, [selectedRobot, map]);
+
+  return null;
+}
+
+// Component to handle routing for robots
+function RobotRouting({ robots }: { robots: Robot[] }) {
+  const map = useMap();
+  const routeRefs = useRef<Map<string, L.Polyline>>(new Map());
+  
+  useEffect(() => {
+    // Clear existing routes
+    routeRefs.current.forEach((polyline) => {
+      map.removeLayer(polyline);
+    });
+    routeRefs.current.clear();
+
+    robots.forEach((robot) => {
+      if (robot.status === 'delivering' && robot.currentDelivery) {
+        // Use route journey if available, otherwise fall back to current route
+        if (robot.routeJourney && robot.currentSegmentIndex !== undefined) {
+          // Display the full route journey
+          robot.routeJourney.forEach((segment, index) => {
+            const validCoordinates = segment.route.coordinates.filter(coord => 
+              coord && coord.length === 2 && 
+              typeof coord[0] === 'number' && typeof coord[1] === 'number' &&
+              Math.abs(coord[0]) > 0.1 || Math.abs(coord[1]) > 0.1
+            );
+            
+            if (validCoordinates.length >= 2) {
+              const routeCoordinates = validCoordinates.map(coord => L.latLng(coord[1], coord[0]));
+              const color = segment.type === 'charging' ? '#ff8c00' : '#00ff00'; // Orange for charging, green for delivery
+              const polyline = L.polyline(routeCoordinates, { 
+                color: color, 
+                opacity: 0.8, 
+                weight: 4 
+              }).addTo(map);
+              
+              const routeKey = `${robot.id}-segment-${index}`;
+              routeRefs.current.set(routeKey, polyline);
+            }
+          });
+        } else if (robot.currentRoute) {
+          // Legacy: display single route
+          const validCoordinates = robot.currentRoute.coordinates.filter(coord => 
+            coord && coord.length === 2 && 
+            typeof coord[0] === 'number' && typeof coord[1] === 'number' &&
+            Math.abs(coord[0]) > 0.1 || Math.abs(coord[1]) > 0.1
+          );
+          
+          if (validCoordinates.length >= 2) {
+            const routeCoordinates = validCoordinates.map(coord => L.latLng(coord[1], coord[0]));
+            const color = '#00ff00'; // Green for legacy routes
+            const polyline = L.polyline(routeCoordinates, { 
+              color: color, 
+              opacity: 0.8, 
+              weight: 4 
+            }).addTo(map);
+            
+            routeRefs.current.set(robot.id, polyline);
+          }
+        }
+      }
+    });
+
+    return () => {
+      routeRefs.current.forEach((polyline) => {
+        map.removeLayer(polyline);
+      });
+      routeRefs.current.clear();
+    };
+  }, [robots, map]);
+
+  return null;
+}
+
+// Component to display location markers
+function LocationMarkers({ robots }: { robots: Robot[] }) {
+  const map = useMap();
+  const markerRefs = useRef<Map<string, L.Marker>>(new Map());
+  const staticMarkersCreated = useRef(false);
+  
+  useEffect(() => {
+    // Only create static markers (charging stations and sample locations) once
+    if (!staticMarkersCreated.current) {   
+      // Always add markers for all charging stations from the simulation
+      CHARGING_STATIONS.forEach((station) => {
+        const locationKey = `charging-${station.lat},${station.lng}`;
+        const marker = L.marker([station.lat, station.lng], {
+          icon: L.divIcon({
+            className: 'charging-marker',
+            html: `<div style="width: 12px; height: 12px; background: #ff8c00; border: 2px solid white; border-radius: 50%; box-shadow: 0 2px 4px rgba(0,0,0,0.3);"></div>`,
+            iconSize: [12, 12],
+            iconAnchor: [6, 6],
+          }),
+        }).addTo(map);
+        
+        // Add hover tooltip
+        marker.bindTooltip(station.address, {
+          permanent: false,
+          direction: 'top',
+          className: 'marker-tooltip'
+        });
+        
+        markerRefs.current.set(locationKey, marker);
+      });
+
+      SAMPLE_LOCATIONS.forEach((location) => {
+        const locationKey = `sample-${location.lat},${location.lng}`;
+        const marker = L.marker([location.lat, location.lng], {
+          icon: L.divIcon({
+            className: 'sample-marker',
+            html: `<div style="width: 12px; height: 12px; background: #3b82f6; border: 2px solid white; border-radius: 50%; box-shadow: 0 2px 4px rgba(0,0,0,0.3);"></div>`,
+            iconSize: [12, 12],
+            iconAnchor: [6, 6],
+          }),
+        }).addTo(map);
+        
+        // Add hover tooltip
+        marker.bindTooltip(location.address, {
+          permanent: false,
+          direction: 'top',
+          className: 'marker-tooltip'
+        });
+        
+        markerRefs.current.set(locationKey, marker);
+      });
+      
+      staticMarkersCreated.current = true;
+    }
+
+    // Clear existing delivery markers
+    const deliveryMarkerKeys = Array.from(markerRefs.current.keys()).filter(key => key.startsWith('delivery-'));
+    deliveryMarkerKeys.forEach(key => {
+      const marker = markerRefs.current.get(key);
+      if (marker) {
+        map.removeLayer(marker);
+        markerRefs.current.delete(key);
+      }
+    });
+
+    // Add markers for delivery locations from current deliveries
+    robots.forEach((robot) => {
+      if (robot.currentDelivery) {
+        robot.currentDelivery.stops.forEach((stop) => {
+          const locationKey = `delivery-${stop.lat},${stop.lng}`;
+          if (!markerRefs.current.has(locationKey)) {
+            const marker = L.marker([stop.lat, stop.lng], {
+              icon: L.divIcon({
+                className: 'delivery-marker',
+                html: `<div style="width: 12px; height: 12px; background: #3b82f6; border: 2px solid white; border-radius: 50%; box-shadow: 0 2px 4px rgba(0,0,0,0.3);"></div>`,
+                iconSize: [12, 12],
+                iconAnchor: [6, 6],
+              }),
+            }).addTo(map);
+            markerRefs.current.set(locationKey, marker);
+          }
+        });
+      }
+    });
+
+    return () => {
+      // Only cleanup on unmount, not on every robots update
+    };
+  }, [map]); // Only depend on map, not robots
+
+  // Separate effect for delivery markers that updates with robots
+  useEffect(() => {
+    // Clear existing delivery markers
+    const deliveryMarkerKeys = Array.from(markerRefs.current.keys()).filter(key => key.startsWith('delivery-'));
+    deliveryMarkerKeys.forEach(key => {
+      const marker = markerRefs.current.get(key);
+      if (marker) {
+        map.removeLayer(marker);
+        markerRefs.current.delete(key);
+      }
+    });
+
+    // Add markers for delivery locations from current deliveries
+    robots.forEach((robot) => {
+      if (robot.currentDelivery) {
+        robot.currentDelivery.stops.forEach((stop) => {
+          const locationKey = `delivery-${stop.lat},${stop.lng}`;
+          if (!markerRefs.current.has(locationKey)) {
+            const marker = L.marker([stop.lat, stop.lng], {
+              icon: L.divIcon({
+                className: 'delivery-marker',
+                html: `<div style="width: 12px; height: 12px; background: #3b82f6; border: 2px solid white; border-radius: 50%; box-shadow: 0 2px 4px rgba(0,0,0,0.3);"></div>`,
+                iconSize: [12, 12],
+                iconAnchor: [6, 6],
+              }),
+            }).addTo(map);
+            markerRefs.current.set(locationKey, marker);
+          }
+        });
+      }
+    });
+  }, [robots, map]);
 
   return null;
 }
@@ -206,7 +404,7 @@ function RobotMarkers({ robots, onRobotClick }: { robots: Robot[]; onRobotClick:
       ))}
 
       {/* Charging station markers */}
-      {chargingStations.map((station, index) => (
+      {/* {chargingStations.map((station, index) => (
         <Marker
           key={`charging-${index}`}
           position={[station.lat, station.lng]}
@@ -224,7 +422,7 @@ function RobotMarkers({ robots, onRobotClick }: { robots: Robot[]; onRobotClick:
             </div>
           </Popup>
         </Marker>
-      ))}
+      ))} */}
     </>
   );
 }
@@ -233,7 +431,7 @@ export default function RobotMapInner({ robots, selectedRobot, onRobotClick }: R
   const [isMapReady, setIsMapReady] = useState(false);
 
   return (
-    <div className="w-full h-full rounded-lg overflow-hidden border border-gray-800 bg-gray-900 relative">
+    <div className="w-full h-full rounded-xl overflow-hidden border border-gray-600/10 relative">
       <MapContainer
         center={[30.2672, -97.7431]} // Austin, Texas
         zoom={13} // Closer zoom for Austin area
@@ -246,9 +444,10 @@ export default function RobotMapInner({ robots, selectedRobot, onRobotClick }: R
           url="https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png"
         />
         <RobotMarkers robots={robots} onRobotClick={onRobotClick} />
+        <RobotRouting robots={robots} />
+        <LocationMarkers robots={robots} />
         <MapUpdater robots={robots} selectedRobot={selectedRobot} onRobotClick={onRobotClick} />
       </MapContainer>
-      
       
       {/* Status breakdown */}
       <div 

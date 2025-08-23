@@ -4,12 +4,26 @@ export interface Location {
   address: string;
 }
 
+export interface Route {
+  coordinates: [number, number][]; // [lng, lat] pairs
+  distance: number;
+  duration: number;
+}
+
+export interface RouteSegment {
+  from: Location;
+  to: Location;
+  route: Route;
+  type: 'delivery' | 'charging';
+}
+
 export interface Delivery {
   id: string;
   stops: Location[];
   status: 'pending' | 'in_progress' | 'completed' | 'failed';
   createdAt: Date;
   estimatedCompletion?: Date;
+  route?: Route; // Optional route information
 }
 
 export interface Robot {
@@ -22,6 +36,10 @@ export interface Robot {
   deliveries: Delivery[];
   speed: number; // km/h
   lastUpdate: Date;
+  currentRoute?: Route; // Current route being followed (legacy)
+  routeProgress?: number; // Progress along current route (0-1) (legacy)
+  routeJourney?: RouteSegment[]; // Full journey as array of route segments
+  currentSegmentIndex?: number; // Current segment being followed
 }
 
 export interface RobotUpdate {

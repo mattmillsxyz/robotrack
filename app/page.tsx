@@ -6,7 +6,7 @@ import RobotCard from "./components/RobotCard";
 import RobotMap from "./components/RobotMap";
 import RobotDetails from "./components/RobotDetails";
 import DeliveryForm from "./components/DeliveryForm";
-import { Package, Plus, Wifi, WifiOff } from "lucide-react";
+import { Bot, Package, Plus, Wifi, WifiOff } from "lucide-react";
 import { AnimatePresence } from "framer-motion";
 import { Button, Card, CardBody, Chip, Spinner } from "@heroui/react";
 
@@ -74,7 +74,7 @@ export default function Dashboard() {
       <header className="px-6 py-4">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <Package className="w-8 h-8 text-green-500" />
+            <Bot className="w-8 h-8 text-green-500" />
             <h1 className="text-2xl font-bold text-foreground text-green-500">
               Robodash
             </h1>

@@ -1,43 +1,8 @@
-import { Robot, Location, Delivery, RobotUpdate } from '../types';
+import { Robot, Location, Delivery, RobotUpdate, Route } from '../types';
 import { v4 as uuidv4 } from 'uuid';
+import { SAMPLE_LOCATIONS, CHARGING_STATIONS } from './locations';
 
-// Sample locations in Austin, Texas - major landmarks and neighborhoods
-const SAMPLE_LOCATIONS: Location[] = [
-  { lat: 30.2672, lng: -97.7431, address: "Downtown Austin" },
-  { lat: 30.2747, lng: -97.7404, address: "State Capitol" },
-  { lat: 30.2849, lng: -97.7341, address: "University of Texas" },
-  { lat: 30.2647, lng: -97.7475, address: "6th Street Entertainment" },
-  { lat: 30.2686, lng: -97.7389, address: "Lady Bird Lake" },
-  { lat: 30.2741, lng: -97.7447, address: "Congress Avenue" },
-  { lat: 30.2599, lng: -97.7456, address: "South Congress" },
-  { lat: 30.2841, lng: -97.7441, address: "Hyde Park" },
-  { lat: 30.2747, lng: -97.7541, address: "East Austin" },
-  { lat: 30.2847, lng: -97.7541, address: "Mueller" },
-  { lat: 30.2647, lng: -97.7541, address: "Riverside" },
-  { lat: 30.2747, lng: -97.7341, address: "West Campus" },
-  { lat: 30.2847, lng: -97.7341, address: "North Campus" },
-  { lat: 30.2647, lng: -97.7341, address: "Zilker Park" },
-  { lat: 30.2747, lng: -97.7241, address: "Barton Springs" },
-  { lat: 30.2847, lng: -97.7241, address: "Tarrytown" },
-  { lat: 30.2647, lng: -97.7241, address: "Clarksville" },
-  { lat: 30.2747, lng: -97.7141, address: "West Austin" },
-  { lat: 30.2847, lng: -97.7141, address: "Lake Austin" },
-  { lat: 30.2647, lng: -97.7141, address: "Rollingwood" },
-];
 
-// Charging stations around Austin
-const CHARGING_STATIONS: Location[] = [
-  { lat: 30.2672, lng: -97.7431, address: "Downtown Charging Hub" },
-  { lat: 30.2849, lng: -97.7341, address: "UT Campus Charging" },
-  { lat: 30.2747, lng: -97.7541, address: "East Austin Charging" },
-  { lat: 30.2847, lng: -97.7541, address: "Mueller Charging Station" },
-  { lat: 30.2647, lng: -97.7541, address: "Riverside Charging" },
-  { lat: 30.2747, lng: -97.7341, address: "West Campus Charging" },
-  { lat: 30.2647, lng: -97.7341, address: "Zilker Charging Hub" },
-  { lat: 30.2747, lng: -97.7241, address: "Barton Springs Charging" },
-  { lat: 30.2847, lng: -97.7241, address: "Tarrytown Charging" },
-  { lat: 30.2747, lng: -97.7141, address: "West Austin Charging" },
-];
 
 const ROBOT_NAMES = [
   'BOT-001'
@@ -162,7 +127,7 @@ class RobotSimulation {
 
       // Update location if robot is moving
       if (robot.status === 'delivering' && robot.currentDelivery) {
-        this.updateRobotLocation(robot);
+        this.updateRobotLocationWithRoute(robot);
       } else if (robot.status === 'charging') {
         // Move towards charging station if not there yet
         this.moveTowardsChargingStation(robot);
@@ -174,8 +139,6 @@ class RobotSimulation {
 
       statusBreakdown[robot.status]++;
     });
-
-    console.log(`Robot update complete. Status breakdown:`, statusBreakdown);
   }
 
   private async calculateRoute(from: Location, to: Location): Promise<RoutePoint[]> {
@@ -294,7 +257,7 @@ class RobotSimulation {
     }
   }
 
-  private findNearestChargingStation(location: Location): Location | null {
+  public findNearestChargingStation(location: Location): Location | null {
     let nearest: Location | null = null;
     let minDistance = Infinity;
     
@@ -312,7 +275,109 @@ class RobotSimulation {
     return nearest;
   }
 
+  private updateRobotLocationWithRoute(robot: Robot) {
+    // Use route journey if available, otherwise fall back to legacy single route
+    if (robot.routeJourney && robot.currentSegmentIndex !== undefined) {
+      this.updateRobotLocationWithRouteJourney(robot);
+    } else if (robot.currentRoute && robot.routeProgress !== undefined) {
+      this.updateRobotLocationWithLegacyRoute(robot);
+    }
+  }
+
+  private updateRobotLocationWithRouteJourney(robot: Robot) {
+    if (!robot.currentDelivery || !robot.routeJourney || robot.currentSegmentIndex === undefined) return;
+    
+    const currentSegment = robot.routeJourney[robot.currentSegmentIndex];
+    if (!currentSegment) return;
+
+    console.log(`${robot.name} following route journey segment ${robot.currentSegmentIndex + 1}/${robot.routeJourney.length}, target: ${currentSegment.to.address}, progress: ${robot.routeProgress?.toFixed(3) || 0}`);
+    
+    // Initialize route progress if not set
+    if (robot.routeProgress === undefined) {
+      robot.routeProgress = 0;
+    }
+    
+    // Validate route coordinates
+    const validCoordinates = currentSegment.route.coordinates.filter(coord => 
+      coord && coord.length === 2 && 
+      typeof coord[0] === 'number' && typeof coord[1] === 'number' &&
+      Math.abs(coord[0]) > 0.1 || Math.abs(coord[1]) > 0.1
+    );
+    
+    if (validCoordinates.length < 2) {
+      console.warn(`${robot.name} has invalid route coordinates, skipping movement`);
+      return;
+    }
+    
+    // Move along the current route segment
+    const movementSpeed = 0.01;
+    const oldProgress = robot.routeProgress;
+    robot.routeProgress += movementSpeed;
+    
+    if (robot.routeProgress >= 1) {
+      // Arrived at destination for this segment
+      console.log(`${robot.name} completed segment ${robot.currentSegmentIndex + 1}: ${currentSegment.to.address}`);
+      
+      // Move to next segment
+      robot.currentSegmentIndex++;
+      robot.routeProgress = 0;
+      
+      if (robot.currentSegmentIndex >= robot.routeJourney.length) {
+        // Completed entire journey
+        console.log(`${robot.name} completed entire route journey`);
+        robot.currentDelivery.status = 'completed';
+        robot.status = 'idle';
+        robot.routeJourney = undefined;
+        robot.currentSegmentIndex = undefined;
+        robot.routeProgress = undefined;
+      } else {
+        // Start next segment
+        const nextSegment = robot.routeJourney[robot.currentSegmentIndex];
+        console.log(`${robot.name} starting segment ${robot.currentSegmentIndex + 1}: ${nextSegment.to.address}`);
+      }
+      return;
+    }
+    
+    // Interpolate position along the current route segment
+    const routeCoordinates = currentSegment.route.coordinates;
+    const totalPoints = routeCoordinates.length;
+    const currentIndex = Math.floor(robot.routeProgress * (totalPoints - 1));
+    const nextIndex = Math.min(currentIndex + 1, totalPoints - 1);
+    
+    const currentCoord = routeCoordinates[currentIndex];
+    const nextCoord = routeCoordinates[nextIndex];
+    
+    if (currentCoord && nextCoord) {
+      const segmentProgress = (robot.routeProgress * (totalPoints - 1)) - currentIndex;
+      const oldLat = robot.location.lat;
+      const oldLng = robot.location.lng;
+      
+      // Update robot position
+      robot.location.lng = currentCoord[0] + (nextCoord[0] - currentCoord[0]) * segmentProgress;
+      robot.location.lat = currentCoord[1] + (nextCoord[1] - currentCoord[1]) * segmentProgress;
+      
+      const latDiff = Math.abs(robot.location.lat - oldLat);
+      const lngDiff = Math.abs(robot.location.lng - oldLng);
+      
+      if (latDiff > 0.000001 || lngDiff > 0.000001) {
+        console.log(`${robot.name} moved along route: lat ${latDiff.toFixed(6)}, lng ${lngDiff.toFixed(6)}`);
+      }
+    }
+  }
+
+  private updateRobotLocationWithLegacyRoute(robot: Robot) {
+    // Legacy method for backward compatibility
+    if (!robot.currentDelivery || robot.currentDelivery.stops.length === 0) return;
+    if (!robot.currentRoute || robot.routeProgress === undefined) return;
+
+    const currentStop = robot.currentDelivery.stops[0];
+    console.log(`${robot.name} following legacy route, target: ${currentStop.address}, progress: ${robot.routeProgress.toFixed(3)}`);
+    
+    // ... rest of legacy logic would go here
+  }
+
   private async updateRobotLocation(robot: Robot) {
+    // Legacy method - keeping for fallback
     if (!robot.currentDelivery || robot.currentDelivery.stops.length === 0) return;
 
     const currentStop = robot.currentDelivery.stops[0];
@@ -513,6 +578,50 @@ class RobotSimulation {
     };
 
     robot.currentDelivery = delivery;
+    robot.deliveries.push(delivery);
+    robot.status = 'delivering';
+
+    return delivery;
+  }
+
+  createDeliveryWithRoute(robotId: string, stops: Location[], route: Route): Delivery | null {
+    const robot = this.robots.get(robotId);
+    if (!robot || robot.status !== 'idle' || robot.battery < 90) return null;
+
+    const delivery: Delivery = {
+      id: uuidv4(),
+      stops: [...stops],
+      status: 'pending',
+      createdAt: new Date(),
+      estimatedCompletion: new Date(Date.now() + route.duration * 1000), // Use actual route duration
+      route: route,
+    };
+
+    robot.currentDelivery = delivery;
+    robot.currentRoute = route;
+    robot.routeProgress = 0;
+    robot.deliveries.push(delivery);
+    robot.status = 'delivering';
+
+    return delivery;
+  }
+
+  createDeliveryWithRouteJourney(robotId: string, stops: Location[], routeJourney: any[]): Delivery | null {
+    const robot = this.robots.get(robotId);
+    if (!robot || robot.status !== 'idle' || robot.battery < 90) return null;
+
+    const delivery: Delivery = {
+      id: uuidv4(),
+      stops: [...stops],
+      status: 'pending',
+      createdAt: new Date(),
+      estimatedCompletion: new Date(Date.now() + 300000), // 5 minutes estimate
+    };
+
+    robot.currentDelivery = delivery;
+    robot.routeJourney = routeJourney;
+    robot.currentSegmentIndex = 0;
+    robot.routeProgress = 0;
     robot.deliveries.push(delivery);
     robot.status = 'delivering';
 

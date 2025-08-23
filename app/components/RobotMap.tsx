@@ -11,7 +11,7 @@ const DynamicMap = dynamic(() => import('./RobotMapInner'), {
   loading: () => (
     <div className="w-full h-full rounded-lg overflow-hidden flex items-center justify-center">
       <div className="text-center">
-        <div className="w-8 h-8 border-4 border-primary/30 border-t-primary rounded-full animate-spin mx-auto mb-4"></div>
+        <div className="w-8 h-8 rounded-full animate-spin mx-auto mb-4"></div>
         <p className="text-muted-foreground">Loading map...</p>
       </div>
     </div>
