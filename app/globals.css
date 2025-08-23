@@ -4,8 +4,116 @@
 @source '../node_modules/@heroui/theme/dist/**/*.{js,ts,jsx,tsx}';
 @custom-variant dark (&:is(.dark *));
 
+/* Leaflet CSS */
+@import 'leaflet/dist/leaflet.css';
 
 :root {
-  --background: #001618;
-  --foreground: #00e8ff;
+  --background: #000000;
+  --foreground: #ffffff;
+  --primary: #00ff00;
+  --secondary: #111111;
+  --accent: #00cc00;
+  --muted: #333333;
+  --border: #444444;
+}
+
+* {
+  box-sizing: border-box;
+  padding: 0;
+  margin: 0;
+}
+
+html,
+body {
+  max-width: 100vw;
+  overflow-x: hidden;
+  background: var(--background);
+  color: var(--foreground);
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
+    'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
+    sans-serif;
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--secondary);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--muted);
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--border);
+}
+
+/* Leaflet customizations for react-leaflet */
+.leaflet-container {
+  background: var(--background) !important;
+  width: 100% !important;
+  height: 100% !important;
+}
+
+.leaflet-control-attribution {
+  background: var(--secondary) !important;
+  color: var(--foreground) !important;
+}
+
+.leaflet-control-attribution a {
+  color: var(--primary) !important;
+}
+
+/* Custom button styles */
+.btn-primary {
+  background: var(--primary) !important;
+  color: var(--background) !important;
+  border: none !important;
+}
+
+.btn-primary:hover {
+  background: var(--accent) !important;
+}
+
+/* Text colors */
+.text-primary {
+  color: var(--primary) !important;
+}
+
+.text-muted-foreground {
+  color: #888888 !important;
+}
+
+/* Background colors */
+.bg-primary {
+  background: var(--primary) !important;
+}
+
+.bg-secondary {
+  background: var(--secondary) !important;
+}
+
+.bg-background {
+  background: var(--background) !important;
+}
+
+/* Border colors */
+.border-border {
+  border-color: var(--border) !important;
+}
+
+.leaflet-layer,
+.leaflet-control-zoom-in,
+.leaflet-control-zoom-out,
+.leaflet-control-attribution {
+  filter: invert(100%) hue-rotate(180deg) brightness(95%) contrast(90%);
 }

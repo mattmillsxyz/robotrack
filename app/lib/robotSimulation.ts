@@ -1,0 +1,539 @@
+import { Robot, Location, Delivery, RobotUpdate } from '../types';
+import { v4 as uuidv4 } from 'uuid';
+
+// Sample locations in Austin, Texas - major landmarks and neighborhoods
+const SAMPLE_LOCATIONS: Location[] = [
+  { lat: 30.2672, lng: -97.7431, address: "Downtown Austin" },
+  { lat: 30.2747, lng: -97.7404, address: "State Capitol" },
+  { lat: 30.2849, lng: -97.7341, address: "University of Texas" },
+  { lat: 30.2647, lng: -97.7475, address: "6th Street Entertainment" },
+  { lat: 30.2686, lng: -97.7389, address: "Lady Bird Lake" },
+  { lat: 30.2741, lng: -97.7447, address: "Congress Avenue" },
+  { lat: 30.2599, lng: -97.7456, address: "South Congress" },
+  { lat: 30.2841, lng: -97.7441, address: "Hyde Park" },
+  { lat: 30.2747, lng: -97.7541, address: "East Austin" },
+  { lat: 30.2847, lng: -97.7541, address: "Mueller" },
+  { lat: 30.2647, lng: -97.7541, address: "Riverside" },
+  { lat: 30.2747, lng: -97.7341, address: "West Campus" },
+  { lat: 30.2847, lng: -97.7341, address: "North Campus" },
+  { lat: 30.2647, lng: -97.7341, address: "Zilker Park" },
+  { lat: 30.2747, lng: -97.7241, address: "Barton Springs" },
+  { lat: 30.2847, lng: -97.7241, address: "Tarrytown" },
+  { lat: 30.2647, lng: -97.7241, address: "Clarksville" },
+  { lat: 30.2747, lng: -97.7141, address: "West Austin" },
+  { lat: 30.2847, lng: -97.7141, address: "Lake Austin" },
+  { lat: 30.2647, lng: -97.7141, address: "Rollingwood" },
+];
+
+// Charging stations around Austin
+const CHARGING_STATIONS: Location[] = [
+  { lat: 30.2672, lng: -97.7431, address: "Downtown Charging Hub" },
+  { lat: 30.2849, lng: -97.7341, address: "UT Campus Charging" },
+  { lat: 30.2747, lng: -97.7541, address: "East Austin Charging" },
+  { lat: 30.2847, lng: -97.7541, address: "Mueller Charging Station" },
+  { lat: 30.2647, lng: -97.7541, address: "Riverside Charging" },
+  { lat: 30.2747, lng: -97.7341, address: "West Campus Charging" },
+  { lat: 30.2647, lng: -97.7341, address: "Zilker Charging Hub" },
+  { lat: 30.2747, lng: -97.7241, address: "Barton Springs Charging" },
+  { lat: 30.2847, lng: -97.7241, address: "Tarrytown Charging" },
+  { lat: 30.2747, lng: -97.7141, address: "West Austin Charging" },
+];
+
+const ROBOT_NAMES = [
+  'Moxi-001'
+];
+
+interface RoutePoint {
+  lat: number;
+  lng: number;
+  progress: number; // 0 to 1 along the route
+}
+
+interface RobotRoute {
+  points: RoutePoint[];
+  currentPointIndex: number;
+  progress: number; // 0 to 1 between current and next point
+  totalDistance: number;
+  currentDistance: number;
+}
+
+class RobotSimulation {
+  private robots: Map<string, Robot> = new Map();
+  private simulationInterval: NodeJS.Timeout | null = null;
+  private io: any = null;
+  private robotRoutes: Map<string, RobotRoute> = new Map();
+
+  constructor() {
+    this.initializeRobots();
+  }
+
+  resetSimulation() {
+    console.log('Resetting simulation...');
+    this.stopSimulation();
+    this.robots.clear();
+    this.robotRoutes.clear();
+    this.initializeRobots();
+    console.log('Simulation reset complete');
+  }
+
+  setIO(io: any) {
+    this.io = io;
+  }
+
+  private initializeRobots() {
+    // Use different locations for each robot to avoid clustering
+    const usedLocations = new Set<number>();
+    
+    ROBOT_NAMES.forEach((name, index) => {
+      let locationIndex;
+      do {
+        locationIndex = Math.floor(Math.random() * SAMPLE_LOCATIONS.length);
+      } while (usedLocations.has(locationIndex));
+      
+      usedLocations.add(locationIndex);
+      const randomLocation = SAMPLE_LOCATIONS[locationIndex];
+      
+      // Start all robots as idle with full battery
+      const robot: Robot = {
+        id: uuidv4(),
+        name,
+        status: 'idle',
+        battery: 100, // Start with full battery
+        location: { ...randomLocation },
+        deliveries: [],
+        speed: 0,
+        lastUpdate: new Date(),
+      };
+      
+      this.robots.set(robot.id, robot);
+    });
+  }
+
+  startSimulation() {
+    if (this.simulationInterval) {
+      console.log('Simulation already running');
+      return;
+    }
+
+    console.log('Starting robot simulation...');
+    this.simulationInterval = setInterval(() => {
+      this.updateRobots();
+    }, 200); // Update every 200ms for smooth movement like Uber
+    console.log('Robot simulation started successfully');
+  }
+
+  stopSimulation() {
+    if (this.simulationInterval) {
+      clearInterval(this.simulationInterval);
+      this.simulationInterval = null;
+    }
+  }
+
+  private updateRobots() {
+    const now = Date.now();
+    const statusBreakdown = { idle: 0, delivering: 0, charging: 0, maintenance: 0, offline: 0 };
+
+    this.robots.forEach((robot) => {
+      // Update battery based on status
+      if (robot.status === 'delivering') {
+        // Very slow battery drain during delivery (should last all day)
+        robot.battery = Math.max(0, robot.battery - 0.00001); // 0.05% per update (very slow)
+      } else if (robot.status === 'charging') {
+        // Fast charging when at charging station
+        robot.battery = Math.min(100, robot.battery + 10);
+      } else {
+        // Very slow drain when idle
+        robot.battery = Math.max(0, robot.battery - 0.00000001); // 0.02% per update (very slow)
+      }
+
+      // Update robot status based on battery and current state
+      if (robot.status === 'delivering' && robot.battery < 20) {
+        // Only go to charging if battery is critically low during delivery
+        this.sendToNearestChargingStation(robot);
+      } else if (robot.status === 'idle' && robot.battery < 30) {
+        // Go to charging when idle and battery is low
+        this.sendToNearestChargingStation(robot);
+      } else if (robot.status === 'charging' && robot.battery >= 95) {
+        // Stop charging when nearly full
+        robot.status = 'idle';
+        robot.speed = 0;
+        console.log(`${robot.name} finished charging, now idle`);
+      }
+
+      // Update location if robot is moving
+      if (robot.status === 'delivering' && robot.currentDelivery) {
+        this.updateRobotLocation(robot);
+      } else if (robot.status === 'charging') {
+        // Move towards charging station if not there yet
+        this.moveTowardsChargingStation(robot);
+      }
+
+      // Update speed and last update time
+      robot.speed = robot.status === 'delivering' ? Math.random() * 15 + 5 : 0; // 5-20 km/h when delivering
+      robot.lastUpdate = new Date();
+
+      statusBreakdown[robot.status]++;
+    });
+
+    console.log(`Robot update complete. Status breakdown:`, statusBreakdown);
+  }
+
+  private async calculateRoute(from: Location, to: Location): Promise<RoutePoint[]> {
+    console.log(`Calculating route from ${from.address} to ${to.address}`);
+    
+    // Use fallback routing for now - more reliable than external OSRM
+    console.log('Using fallback routing with street simulation');
+    return this.createFallbackRoute(from, to);
+  }
+
+  private createFallbackRoute(from: Location, to: Location): RoutePoint[] {
+    const points: RoutePoint[] = [];
+    const numPoints = 50; // More points for smoother movement
+    
+    console.log(`Creating fallback route with ${numPoints} points`);
+    
+    // Create a more realistic route that follows major streets
+    // Add intermediate waypoints to simulate street routing
+    const intermediatePoints = this.getIntermediateWaypoints(from, to);
+    
+    // Build route through intermediate points
+    let currentFrom = from;
+    let totalProgress = 0;
+    
+    for (const waypoint of intermediatePoints) {
+      // Add points from current position to waypoint
+      for (let i = 0; i <= 10; i++) {
+        const progress = i / 10;
+        const lat = currentFrom.lat + (waypoint.lat - currentFrom.lat) * progress;
+        const lng = currentFrom.lng + (waypoint.lng - currentFrom.lng) * progress;
+        
+        points.push({
+          lat,
+          lng,
+          progress: totalProgress
+        });
+        totalProgress += 1 / (intermediatePoints.length + 1) / 11; // 11 points per segment
+      }
+      currentFrom = waypoint;
+    }
+    
+    // Add final segment to destination
+    for (let i = 0; i <= 10; i++) {
+      const progress = i / 10;
+      const lat = currentFrom.lat + (to.lat - currentFrom.lat) * progress;
+      const lng = currentFrom.lng + (to.lng - currentFrom.lng) * progress;
+      
+      points.push({
+        lat,
+        lng,
+        progress: totalProgress
+      });
+      totalProgress += 1 / (intermediatePoints.length + 1) / 11;
+    }
+    
+    // Normalize progress values
+    points.forEach((point, index) => {
+      point.progress = index / (points.length - 1);
+    });
+    
+    console.log(`Fallback route created: ${points.length} points`);
+    return points;
+  }
+
+  private getIntermediateWaypoints(from: Location, to: Location): Location[] {
+    // Create intermediate waypoints to simulate street routing
+    const waypoints: Location[] = [];
+    
+    // Find 2-4 intermediate points along the route for more realistic paths
+    const numWaypoints = Math.floor(Math.random() * 3) + 2;
+    
+    for (let i = 1; i <= numWaypoints; i++) {
+      const progress = i / (numWaypoints + 1);
+      
+      // Add some randomness to simulate street curves
+      const baseLat = from.lat + (to.lat - from.lat) * progress;
+      const baseLng = from.lng + (to.lng - from.lng) * progress;
+      
+      // Add larger random offset to simulate street routing (more pronounced curves)
+      const latOffset = (Math.random() - 0.5) * 0.005;
+      const lngOffset = (Math.random() - 0.5) * 0.005;
+      
+      waypoints.push({
+        lat: baseLat + latOffset,
+        lng: baseLng + lngOffset,
+        address: `Waypoint ${i}`
+      });
+    }
+    
+    return waypoints;
+  }
+
+  private moveTowardsChargingStation(robot: Robot) {
+    // Find the nearest charging station
+    const nearestStation = this.findNearestChargingStation(robot.location);
+    if (!nearestStation) return;
+
+    // Simple movement towards charging station
+    const latDiff = nearestStation.lat - robot.location.lat;
+    const lngDiff = nearestStation.lng - robot.location.lng;
+    const distance = Math.sqrt(latDiff * latDiff + lngDiff * lngDiff);
+    
+    if (distance < 0.001) {
+      // Arrived at charging station
+      robot.location = { ...nearestStation };
+      robot.speed = 0;
+    } else {
+      // Move towards charging station
+      const moveSpeed = 0.0001;
+      const latMove = (latDiff / distance) * moveSpeed;
+      const lngMove = (lngDiff / distance) * moveSpeed;
+      
+      robot.location.lat += latMove;
+      robot.location.lng += lngMove;
+      robot.speed = 5; // Slow speed when going to charge
+    }
+  }
+
+  private findNearestChargingStation(location: Location): Location | null {
+    let nearest: Location | null = null;
+    let minDistance = Infinity;
+    
+    for (const station of this.getChargingStations()) {
+      const distance = Math.sqrt(
+        Math.pow(station.lat - location.lat, 2) + 
+        Math.pow(station.lng - location.lng, 2)
+      );
+      if (distance < minDistance) {
+        minDistance = distance;
+        nearest = station;
+      }
+    }
+    
+    return nearest;
+  }
+
+  private async updateRobotLocation(robot: Robot) {
+    if (!robot.currentDelivery || robot.currentDelivery.stops.length === 0) return;
+
+    const currentStop = robot.currentDelivery.stops[0];
+    console.log(`${robot.name} updating location, target: ${currentStop.address}`);
+    
+    // Get or create route for this robot
+    let route = this.robotRoutes.get(robot.id);
+    if (!route) {
+      console.log(`${robot.name} creating new route`);
+      const routePoints = await this.calculateRoute(robot.location, currentStop);
+      route = {
+        points: routePoints,
+        currentPointIndex: 0,
+        progress: 0,
+        totalDistance: this.calculateRouteDistance(routePoints),
+        currentDistance: 0
+      };
+      this.robotRoutes.set(robot.id, route);
+      console.log(`${robot.name} route created with ${routePoints.length} points`);
+    }
+    
+    if (route.points.length === 0) {
+      console.log(`${robot.name} no route points available`);
+      return;
+    }
+    
+    // Move along the route - faster movement
+    const movementSpeed = 0.03; // Faster for visible movement
+    const currentPoint = route.points[route.currentPointIndex];
+    const nextPoint = route.points[route.currentPointIndex + 1];
+    
+    console.log(`${robot.name} route progress: ${route.currentPointIndex}/${route.points.length}, progress: ${route.progress.toFixed(3)}`);
+    
+    if (!nextPoint) {
+      // Arrived at destination
+      console.log(`${robot.name} arrived at destination`);
+      robot.currentDelivery.stops.shift();
+      if (robot.currentDelivery.stops.length === 0) {
+        robot.currentDelivery.status = 'completed';
+        robot.status = 'idle';
+        robot.currentDelivery = undefined;
+        this.robotRoutes.delete(robot.id);
+        console.log(`${robot.name} completed delivery`);
+      } else {
+        // Calculate route to next stop
+        const nextStop = robot.currentDelivery.stops[0];
+        console.log(`${robot.name} calculating route to next stop: ${nextStop.address}`);
+        this.calculateRoute(robot.location, nextStop).then(routePoints => {
+          const newRoute = {
+            points: routePoints,
+            currentPointIndex: 0,
+            progress: 0,
+            totalDistance: this.calculateRouteDistance(routePoints),
+            currentDistance: 0
+          };
+          this.robotRoutes.set(robot.id, newRoute);
+          console.log(`${robot.name} new route created with ${routePoints.length} points`);
+        });
+      }
+      return;
+    }
+    
+    // Update progress between current and next point
+    const oldProgress = route.progress;
+    route.progress += movementSpeed;
+    
+    console.log(`${robot.name} progress: ${oldProgress.toFixed(3)} -> ${route.progress.toFixed(3)}`);
+    
+    if (route.progress >= 1) {
+      // Move to next point
+      route.currentPointIndex++;
+      route.progress = 0;
+      console.log(`${robot.name} moved to next point: ${route.currentPointIndex}`);
+      
+      if (route.currentPointIndex >= route.points.length - 1) {
+        // Arrived at destination
+        console.log(`${robot.name} arrived at destination`);
+        robot.currentDelivery.stops.shift();
+        if (robot.currentDelivery.stops.length === 0) {
+          robot.currentDelivery.status = 'completed';
+          robot.status = 'idle';
+          robot.currentDelivery = undefined;
+          this.robotRoutes.delete(robot.id);
+          console.log(`${robot.name} completed delivery`);
+        } else {
+          // Calculate route to next stop
+          const nextStop = robot.currentDelivery.stops[0];
+          console.log(`${robot.name} calculating route to next stop: ${nextStop.address}`);
+          this.calculateRoute(robot.location, nextStop).then(routePoints => {
+            const newRoute = {
+              points: routePoints,
+              currentPointIndex: 0,
+              progress: 0,
+              totalDistance: this.calculateRouteDistance(routePoints),
+              currentDistance: 0
+            };
+            this.robotRoutes.set(robot.id, newRoute);
+            console.log(`${robot.name} new route created with ${routePoints.length} points`);
+          });
+        }
+        return;
+      }
+    }
+    
+    // Interpolate position between current and next point
+    const currentPoint2 = route.points[route.currentPointIndex];
+    const nextPoint2 = route.points[route.currentPointIndex + 1];
+    
+    if (currentPoint2 && nextPoint2) {
+      const oldLat = robot.location.lat;
+      const oldLng = robot.location.lng;
+      
+      robot.location.lat = currentPoint2.lat + (nextPoint2.lat - currentPoint2.lat) * route.progress;
+      robot.location.lng = currentPoint2.lng + (nextPoint2.lng - currentPoint2.lng) * route.progress;
+      
+      const latDiff = Math.abs(robot.location.lat - oldLat);
+      const lngDiff = Math.abs(robot.location.lng - oldLng);
+      
+      if (latDiff > 0.000001 || lngDiff > 0.000001) {
+        console.log(`${robot.name} moved: lat ${latDiff.toFixed(6)}, lng ${lngDiff.toFixed(6)}`);
+      }
+    }
+  }
+
+  private sendToNearestChargingStation(robot: Robot) {
+    // Find nearest charging station
+    let nearestStation = CHARGING_STATIONS[0];
+    let minDistance = this.distance(robot.location, nearestStation);
+    
+    CHARGING_STATIONS.forEach(station => {
+      const dist = this.distance(robot.location, station);
+      if (dist < minDistance) {
+        minDistance = dist;
+        nearestStation = station;
+      }
+    });
+    
+    // Create a "delivery" to the charging station
+    const chargingDelivery: Delivery = {
+      id: uuidv4(),
+      stops: [nearestStation],
+      status: 'in_progress',
+      createdAt: new Date(),
+      estimatedCompletion: new Date(Date.now() + 60000), // 1 minute
+    };
+    
+    robot.currentDelivery = chargingDelivery;
+    robot.deliveries.push(chargingDelivery);
+  }
+
+  private distance(loc1: Location, loc2: Location): number {
+    const dx = loc1.lat - loc2.lat;
+    const dy = loc1.lng - loc2.lng;
+    return Math.sqrt(dx * dx + dy * dy);
+  }
+
+  private calculateRouteDistance(points: RoutePoint[]): number {
+    let distance = 0;
+    for (let i = 1; i < points.length; i++) {
+      const dx = points[i].lat - points[i-1].lat;
+      const dy = points[i].lng - points[i-1].lng;
+      distance += Math.sqrt(dx * dx + dy * dy);
+    }
+    return distance;
+  }
+
+  private assignRandomDelivery(robot: Robot) {
+    const numStops = Math.floor(Math.random() * 3) + 2; // 2-4 stops
+    const stops: Location[] = [];
+    
+    for (let i = 0; i < numStops; i++) {
+      const randomLocation = SAMPLE_LOCATIONS[Math.floor(Math.random() * SAMPLE_LOCATIONS.length)];
+      stops.push({ ...randomLocation });
+    }
+
+    const delivery: Delivery = {
+      id: uuidv4(),
+      stops,
+      status: 'in_progress',
+      createdAt: new Date(),
+      estimatedCompletion: new Date(Date.now() + Math.random() * 300000 + 60000), // 1-6 minutes
+    };
+
+    robot.currentDelivery = delivery;
+    robot.deliveries.push(delivery);
+  }
+
+  createDelivery(robotId: string, stops: Location[]): Delivery | null {
+    const robot = this.robots.get(robotId);
+    if (!robot || robot.status !== 'idle' || robot.battery < 90) return null; // Only if idle and fully charged
+
+    const delivery: Delivery = {
+      id: uuidv4(),
+      stops: [...stops],
+      status: 'pending',
+      createdAt: new Date(),
+      estimatedCompletion: new Date(Date.now() + Math.random() * 300000 + 60000),
+    };
+
+    robot.currentDelivery = delivery;
+    robot.deliveries.push(delivery);
+    robot.status = 'delivering';
+
+    return delivery;
+  }
+
+  getRobots(): Robot[] {
+    return Array.from(this.robots.values());
+  }
+
+  getRobot(id: string): Robot | undefined {
+    return this.robots.get(id);
+  }
+
+  getSampleLocations(): Location[] {
+    return SAMPLE_LOCATIONS;
+  }
+
+  getChargingStations(): Location[] {
+    return CHARGING_STATIONS;
+  }
+}
+
+export const robotSimulation = new RobotSimulation();
