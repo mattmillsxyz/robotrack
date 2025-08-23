@@ -1,11 +1,16 @@
 import { Robot, Location, Delivery, RobotUpdate, Route } from '../types';
-import { v4 as uuidv4 } from 'uuid';
+import { v4 as uuidv4 } from 'uuid'; // Still needed for delivery IDs
 import { SAMPLE_LOCATIONS, CHARGING_STATIONS } from './locations';
 
 
 
 const ROBOT_NAMES = [
   'BOT-001'
+];
+
+// Static robot IDs that don't change on server restart
+const ROBOT_IDS = [
+  'robot-001'
 ];
 
 interface RoutePoint {
@@ -60,7 +65,7 @@ class RobotSimulation {
       
       // Start all robots as idle with full battery
       const robot: Robot = {
-        id: uuidv4(),
+        id: ROBOT_IDS[index], // Use static ID instead of uuidv4()
         name,
         status: 'idle',
         battery: 100, // Start with full battery
@@ -102,7 +107,7 @@ class RobotSimulation {
       // Update battery based on status
       if (robot.status === 'delivering') {
         // Very slow battery drain during delivery (should last all day)
-        robot.battery = Math.max(0, robot.battery - 0.00001); // 0.05% per update (very slow)
+        robot.battery = Math.max(0, robot.battery - 0.000001); // Much slower drain
       } else if (robot.status === 'charging') {
         // Fast charging when at charging station
         robot.battery = Math.min(100, robot.battery + 10);
@@ -112,11 +117,11 @@ class RobotSimulation {
       }
 
       // Update robot status based on battery and current state
-      if (robot.status === 'delivering' && robot.battery < 20) {
+      if (robot.status === 'delivering' && robot.battery < 15) {
         // Only go to charging if battery is critically low during delivery
         this.sendToNearestChargingStation(robot);
-      } else if (robot.status === 'idle' && robot.battery < 30) {
-        // Go to charging when idle and battery is low
+      } else if (robot.status === 'idle' && robot.battery < 20) {
+        // Go to charging when idle and battery is low (lower threshold)
         this.sendToNearestChargingStation(robot);
       } else if (robot.status === 'charging' && robot.battery >= 95) {
         // Stop charging when nearly full
@@ -134,7 +139,14 @@ class RobotSimulation {
       }
 
       // Update speed and last update time
-      robot.speed = robot.status === 'delivering' ? Math.random() * 15 + 5 : 0; // 5-20 km/h when delivering
+      // Use consistent speed based on status
+      if (robot.status === 'delivering') {
+        robot.speed = 12; // Consistent 12 km/h for deliveries
+      } else if (robot.status === 'charging') {
+        robot.speed = 5; // Slower speed when going to charge
+      } else {
+        robot.speed = 0; // No movement when idle
+      }
       robot.lastUpdate = new Date();
 
       statusBreakdown[robot.status]++;
@@ -253,7 +265,7 @@ class RobotSimulation {
       
       robot.location.lat += latMove;
       robot.location.lng += lngMove;
-      robot.speed = 5; // Slow speed when going to charge
+      // Speed is now handled in the main update loop
     }
   }
 
@@ -290,6 +302,11 @@ class RobotSimulation {
     const currentSegment = robot.routeJourney[robot.currentSegmentIndex];
     if (!currentSegment) return;
 
+    // Update the current delivery's first stop to reflect the current target
+    if (robot.currentDelivery.stops.length > 0) {
+      robot.currentDelivery.stops[0] = currentSegment.to;
+    }
+
     console.log(`${robot.name} following route journey segment ${robot.currentSegmentIndex + 1}/${robot.routeJourney.length}, target: ${currentSegment.to.address}, progress: ${robot.routeProgress?.toFixed(3) || 0}`);
     
     // Initialize route progress if not set
@@ -324,9 +341,10 @@ class RobotSimulation {
       
       if (robot.currentSegmentIndex >= robot.routeJourney.length) {
         // Completed entire journey
-        console.log(`${robot.name} completed entire route journey`);
+        console.log(`${robot.name} completed entire route journey with battery at ${robot.battery.toFixed(2)}%`);
         robot.currentDelivery.status = 'completed';
         robot.status = 'idle';
+        robot.currentDelivery = undefined; // Clear the current delivery reference
         robot.routeJourney = undefined;
         robot.currentSegmentIndex = undefined;
         robot.routeProgress = undefined;
@@ -373,7 +391,51 @@ class RobotSimulation {
     const currentStop = robot.currentDelivery.stops[0];
     console.log(`${robot.name} following legacy route, target: ${currentStop.address}, progress: ${robot.routeProgress.toFixed(3)}`);
     
-    // ... rest of legacy logic would go here
+    // Update progress along the route
+    const movementSpeed = 0.01;
+    robot.routeProgress += movementSpeed;
+    
+    if (robot.routeProgress >= 1) {
+      // Arrived at destination
+      console.log(`${robot.name} arrived at destination: ${currentStop.address}`);
+      robot.currentDelivery.stops.shift();
+      robot.routeProgress = 0;
+      
+      if (robot.currentDelivery.stops.length === 0) {
+        robot.currentDelivery.status = 'completed';
+        robot.status = 'idle';
+        robot.currentDelivery = undefined;
+        robot.currentRoute = undefined;
+        console.log(`${robot.name} completed delivery with battery at ${robot.battery.toFixed(2)}%`);
+      }
+      return;
+    }
+    
+    // Interpolate position along the route
+    const routeCoordinates = robot.currentRoute.coordinates;
+    const totalPoints = routeCoordinates.length;
+    const currentIndex = Math.floor(robot.routeProgress * (totalPoints - 1));
+    const nextIndex = Math.min(currentIndex + 1, totalPoints - 1);
+    
+    const currentCoord = routeCoordinates[currentIndex];
+    const nextCoord = routeCoordinates[nextIndex];
+    
+    if (currentCoord && nextCoord) {
+      const segmentProgress = (robot.routeProgress * (totalPoints - 1)) - currentIndex;
+      const oldLat = robot.location.lat;
+      const oldLng = robot.location.lng;
+      
+      // Update robot position
+      robot.location.lng = currentCoord[0] + (nextCoord[0] - currentCoord[0]) * segmentProgress;
+      robot.location.lat = currentCoord[1] + (nextCoord[1] - currentCoord[1]) * segmentProgress;
+      
+      const latDiff = Math.abs(robot.location.lat - oldLat);
+      const lngDiff = Math.abs(robot.location.lng - oldLng);
+      
+      if (latDiff > 0.000001 || lngDiff > 0.000001) {
+        console.log(`${robot.name} moved along legacy route: lat ${latDiff.toFixed(6)}, lng ${lngDiff.toFixed(6)}`);
+      }
+    }
   }
 
   private async updateRobotLocation(robot: Robot) {

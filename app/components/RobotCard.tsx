@@ -115,7 +115,7 @@ export default function RobotCard({ robot, isSelected, onClick }: RobotCardProps
               />
             </div>
 
-            {robot.status === 'delivering' && robot.speed > 0 && (
+            {robot.speed > 0 && (
               <div className="flex items-center justify-between text-xs">
                 <span className="text-foreground/60">Speed</span>
                 <span className="text-success">{robot.speed.toFixed(1)} km/h</span>
@@ -144,6 +144,31 @@ export default function RobotCard({ robot, isSelected, onClick }: RobotCardProps
                   <div className="text-xs text-foreground/60">
                     {robot.currentDelivery.stops.length} stops remaining
                   </div>
+                  {robot.currentDelivery.stops.length > 0 && (
+                    <div className="text-xs text-foreground/80 mt-1">
+                      <div className="flex items-center gap-1">
+                        <MapPin className="w-3 h-3" />
+                        <span className="truncate">
+                          {robot.currentDelivery.stops[0].address}
+                        </span>
+                      </div>
+                    </div>
+                  )}
+                  {robot.routeJourney && robot.currentSegmentIndex !== undefined && (
+                    <div className="text-xs text-foreground/60 mt-1">
+                      <div>Segment {robot.currentSegmentIndex + 1}/{robot.routeJourney.length}</div>
+                      {robot.routeProgress !== undefined && (
+                        <div className="mt-1">
+                          <Progress 
+                            value={robot.routeProgress * 100} 
+                            color="success"
+                            size="sm"
+                            className="w-full"
+                          />
+                        </div>
+                      )}
+                    </div>
+                  )}
                 </CardBody>
               </Card>
             )}
