@@ -3,6 +3,7 @@
 import { Robot } from '../types';
 import { Battery, MapPin, Clock, Package, Zap, Wrench, WifiOff } from 'lucide-react';
 import { motion } from 'framer-motion';
+import { Card, CardBody, Chip, Progress } from "@heroui/react";
 
 interface RobotCardProps {
   robot: Robot;
@@ -13,41 +14,41 @@ interface RobotCardProps {
 const getStatusIcon = (status: Robot['status']) => {
   switch (status) {
     case 'idle':
-      return <Package className="w-4 h-4 text-green-400" />;
+      return <Package className="w-4 h-4 text-success" />;
     case 'delivering':
-      return <MapPin className="w-4 h-4 text-green-400" />;
+      return <MapPin className="w-4 h-4 text-success" />;
     case 'charging':
-      return <Zap className="w-4 h-4 text-yellow-400" />;
+      return <Zap className="w-4 h-4 text-warning" />;
     case 'maintenance':
-      return <Wrench className="w-4 h-4 text-orange-400" />;
+      return <Wrench className="w-4 h-4 text-warning" />;
     case 'offline':
-      return <WifiOff className="w-4 h-4 text-red-400" />;
+      return <WifiOff className="w-4 h-4 text-danger" />;
     default:
-      return <Package className="w-4 h-4 text-gray-400" />;
+      return <Package className="w-4 h-4 text-default-400" />;
   }
 };
 
 const getStatusColor = (status: Robot['status']) => {
   switch (status) {
     case 'idle':
-      return 'bg-green-500/20 border-green-500/30';
+      return 'success';
     case 'delivering':
-      return 'bg-green-500/20 border-green-500/30';
+      return 'success';
     case 'charging':
-      return 'bg-yellow-500/20 border-yellow-500/30';
+      return 'warning';
     case 'maintenance':
-      return 'bg-orange-500/20 border-orange-500/30';
+      return 'warning';
     case 'offline':
-      return 'bg-red-500/20 border-red-500/30';
+      return 'danger';
     default:
-      return 'bg-gray-500/20 border-gray-500/30';
+      return 'default';
   }
 };
 
 const getBatteryColor = (battery: number) => {
-  if (battery > 60) return 'text-green-400';
-  if (battery > 30) return 'text-yellow-400';
-  return 'text-red-400';
+  if (battery > 60) return 'success';
+  if (battery > 30) return 'warning';
+  return 'danger';
 };
 
 export default function RobotCard({ robot, isSelected, onClick }: RobotCardProps) {
@@ -59,71 +60,96 @@ export default function RobotCard({ robot, isSelected, onClick }: RobotCardProps
     <motion.div
       whileHover={{ scale: 1.02 }}
       whileTap={{ scale: 0.98 }}
-      className={`p-4 rounded-lg border cursor-pointer transition-all duration-200 ${
-        isSelected 
-          ? 'bg-green-500/10 border-green-500/50 shadow-lg shadow-green-500/20' 
-          : 'bg-secondary/50 border-border hover:bg-secondary/70'
-      }`}
-      onClick={onClick}
     >
-      <div className="flex items-center justify-between mb-3">
-        <div className="flex items-center gap-2">
-          {getStatusIcon(robot.status)}
-          <h3 className="font-semibold text-sm text-white">{robot.name}</h3>
-        </div>
-        <div className={`w-2 h-2 rounded-full ${getStatusColor(robot.status).split(' ')[0]}`} />
-      </div>
-
-      <div className="space-y-2">
-        <div className="flex items-center justify-between text-xs">
-          <span className="text-muted-foreground">Status</span>
-          <span className={`text-xs font-medium ${
-            robot.status === 'idle' ? 'text-green-400' :
-            robot.status === 'delivering' ? 'text-green-400' :
-            robot.status === 'charging' ? 'text-yellow-400' :
-            robot.status === 'maintenance' ? 'text-orange-400' :
-            'text-red-400'
-          }`}>
-            {robot.status.charAt(0).toUpperCase() + robot.status.slice(1)}
-          </span>
-        </div>
-
-        <div className="flex items-center justify-between text-xs">
-          <span className="text-muted-foreground">Battery</span>
-          <div className="flex items-center gap-1">
-            <Battery className="w-3 h-3" />
-            <span className={getBatteryColor(robot.battery)}>
-              {Math.round(robot.battery)}%
-            </span>
-          </div>
-        </div>
-
-        {robot.status === 'delivering' && robot.speed > 0 && (
-          <div className="flex items-center justify-between text-xs">
-            <span className="text-muted-foreground">Speed</span>
-            <span className="text-green-400">{robot.speed.toFixed(1)} km/h</span>
-          </div>
-        )}
-
-        <div className="flex items-center justify-between text-xs">
-          <span className="text-muted-foreground">Last Update</span>
-          <div className="flex items-center gap-1">
-            <Clock className="w-3 h-3" />
-            <span className={isRecent ? 'text-green-400' : 'text-muted-foreground'}>
-              {isRecent ? 'Live' : `${Math.floor(timeSinceUpdate / 1000)}s ago`}
-            </span>
-          </div>
-        </div>
-
-        {robot.currentDelivery && (
-          <div className="mt-2 p-2 bg-green-500/5 rounded border border-green-500/20">
-            <div className="text-xs text-green-400 font-medium">Current Delivery</div>
-            <div className="text-xs text-muted-foreground">
-              {robot.currentDelivery.stops.length} stops remaining
+      <Card
+        isPressable
+        onPress={onClick}
+        className={`transition-all duration-200 w-full ${
+          isSelected 
+            ? 'ring-2 ring-primary shadow-lg' 
+            : 'hover:shadow-md'
+        }`}
+        shadow="sm"
+      >
+        <CardBody className="p-4">
+          <div className="flex items-center justify-between mb-3">
+            <div className="flex items-center gap-2">
+              {getStatusIcon(robot.status)}
+              <h3 className="font-semibold text-sm text-foreground">{robot.name}</h3>
             </div>
+            <Chip 
+              color={getStatusColor(robot.status)} 
+              variant="dot" 
+              size="sm"
+            />
           </div>
-        )}
-      </div>
+
+          <div className="space-y-3">
+            <div className="flex items-center justify-between text-xs">
+              <span className="text-foreground/60">Status</span>
+              <Chip 
+                color={getStatusColor(robot.status)} 
+                variant="flat" 
+                size="sm"
+                className="text-xs"
+              >
+                {robot.status.charAt(0).toUpperCase() + robot.status.slice(1)}
+              </Chip>
+            </div>
+
+            <div className="space-y-2">
+              <div className="flex items-center justify-between text-xs">
+                <span className="text-foreground/60">Battery</span>
+                <div className="flex items-center gap-1">
+                  <Battery className="w-3 h-3" />
+                  <span className={`text-${getBatteryColor(robot.battery)}`}>
+                    {Math.round(robot.battery)}%
+                  </span>
+                </div>
+              </div>
+              <Progress 
+                value={robot.battery} 
+                color={getBatteryColor(robot.battery)}
+                size="sm"
+                className="w-full"
+              />
+            </div>
+
+            {robot.status === 'delivering' && robot.speed > 0 && (
+              <div className="flex items-center justify-between text-xs">
+                <span className="text-foreground/60">Speed</span>
+                <span className="text-success">{robot.speed.toFixed(1)} km/h</span>
+              </div>
+            )}
+
+            <div className="flex items-center justify-between text-xs">
+              <span className="text-foreground/60">Last Update</span>
+              <div className="flex items-center gap-1">
+                <Clock className="w-3 h-3" />
+                <Chip 
+                  color={isRecent ? "success" : "default"} 
+                  variant="flat" 
+                  size="sm"
+                  className="text-xs"
+                >
+                  {isRecent ? 'Live' : `${Math.floor(timeSinceUpdate / 1000)}s ago`}
+                </Chip>
+              </div>
+            </div>
+
+            {robot.currentDelivery && (
+              <Card className="bg-success/5 border border-success/20">
+                <CardBody className="p-2">
+                  <div className="text-xs text-success font-medium">Current Delivery</div>
+                  <div className="text-xs text-foreground/60">
+                    {robot.currentDelivery.stops.length} stops remaining
+                  </div>
+                </CardBody>
+              </Card>
+            )}
+          </div>
+        </CardBody>
+      </Card>
     </motion.div>
   );
 }

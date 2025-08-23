@@ -40,7 +40,7 @@ const CHARGING_STATIONS: Location[] = [
 ];
 
 const ROBOT_NAMES = [
-  'Moxi-001'
+  'BOT-001'
 ];
 
 interface RoutePoint {

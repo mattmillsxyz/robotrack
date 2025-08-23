@@ -249,13 +249,7 @@ export default function RobotMapInner({ robots, selectedRobot, onRobotClick }: R
         <MapUpdater robots={robots} selectedRobot={selectedRobot} onRobotClick={onRobotClick} />
       </MapContainer>
       
-      {/* Debug overlay */}
-      <div 
-        className="absolute top-0 left-0 pointer-events-none z-50 text-xs text-green-500 bg-black/50 px-2 py-1"
-        style={{ fontSize: '10px' }}
-      >
-        Map Ready: {isMapReady ? 'Yes' : 'No'} | Robots: {robots.length}
-      </div>
+      
       {/* Status breakdown */}
       <div 
         className="absolute top-0 right-0 pointer-events-none z-50 text-xs text-green-500 bg-black/50 px-2 py-1"

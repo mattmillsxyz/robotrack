@@ -1,13 +1,14 @@
-'use client';
+"use client";
 
-import { useState, useEffect } from 'react';
-import { Robot } from './types';
-import RobotCard from './components/RobotCard';
-import RobotMap from './components/RobotMap';
-import RobotDetails from './components/RobotDetails';
-import DeliveryForm from './components/DeliveryForm';
-import { Package, Plus, Wifi, WifiOff } from 'lucide-react';
-import { AnimatePresence } from 'framer-motion';
+import { useState, useEffect } from "react";
+import { Robot } from "./types";
+import RobotCard from "./components/RobotCard";
+import RobotMap from "./components/RobotMap";
+import RobotDetails from "./components/RobotDetails";
+import DeliveryForm from "./components/DeliveryForm";
+import { Package, Plus, Wifi, WifiOff } from "lucide-react";
+import { AnimatePresence } from "framer-motion";
+import { Button, Card, CardBody, Chip, Spinner } from "@heroui/react";
 
 export default function Dashboard() {
   const [robots, setRobots] = useState<Robot[]>([]);
@@ -19,7 +20,7 @@ export default function Dashboard() {
   // Fetch robots data periodically
   useEffect(() => {
     fetchRobots();
-    
+
     // Poll for updates every 200ms to match simulation speed
     const interval = setInterval(() => {
       fetchRobots();
@@ -31,14 +32,14 @@ export default function Dashboard() {
 
   const fetchRobots = async () => {
     try {
-      const response = await fetch('/api/robots');
+      const response = await fetch("/api/robots");
       if (!response.ok) {
-        throw new Error('Failed to fetch robots');
+        throw new Error("Failed to fetch robots");
       }
       const robotsData = await response.json();
       setRobots(robotsData);
     } catch (error) {
-      console.error('Failed to fetch robots:', error);
+      console.error("Failed to fetch robots:", error);
     } finally {
       setIsLoading(false);
     }
@@ -58,46 +59,48 @@ export default function Dashboard() {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-black flex items-center justify-center">
+      <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="text-center">
-          <div className="w-8 h-8 border-4 border-green-500/30 border-t-green-500 rounded-full animate-spin mx-auto mb-4"></div>
-          <p className="text-gray-400">Loading robotics dashboard...</p>
+          <Spinner size="lg" color="primary" className="mb-4" />
+          <p className="text-foreground/60">Loading robotics dashboard...</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-black text-white">
+    <div className="min-h-screen bg-background text-foreground">
       {/* Header */}
-      <header className="bg-gray-900 border-b border-gray-800 px-6 py-4">
+      <header className="px-6 py-4">
         <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2">
             <Package className="w-8 h-8 text-green-500" />
-            <div>
-              <h1 className="text-xl font-bold text-white">Moxi Robotics Dashboard</h1>
-              <p className="text-sm text-gray-400">Real-time delivery fleet monitoring</p>
-            </div>
+            <h1 className="text-2xl font-bold text-foreground text-green-500">
+              Robodash
+            </h1>
           </div>
-          
+
           <div className="flex items-center gap-4">
             {/* Connection Status */}
             <div className="flex items-center gap-2 text-sm">
-              <Wifi className="w-4 h-4 text-green-500" />
-              <span className="text-green-500">Live</span>
-              <span className="text-gray-400 text-xs">
+              <span className="text-foreground/60 text-xs">
                 Last update: {lastUpdate.toLocaleTimeString()}
               </span>
+              <Wifi className="w-4 h-4 text-success" />
+              <Chip color="success" variant="flat" size="sm">
+                Live
+              </Chip>
             </div>
 
             {/* Create Delivery Button */}
-            <button
-              onClick={() => setShowDeliveryForm(true)}
-              className="bg-green-500 text-black px-4 py-2 rounded-lg font-medium hover:bg-green-400 transition-colors flex items-center gap-2"
+            <Button
+              color="success"
+              variant="ghost"
+              startContent={<Plus className="w-4 h-4" />}
+              onPress={() => setShowDeliveryForm(true)}
             >
-              <Plus className="w-4 h-4" />
               New Delivery
-            </button>
+            </Button>
           </div>
         </div>
       </header>
@@ -105,11 +108,13 @@ export default function Dashboard() {
       {/* Main Content */}
       <div className="flex h-[calc(100vh-80px)]">
         {/* Sidebar */}
-        <div className="w-80 bg-gray-900 border-r border-gray-800 p-4 overflow-y-auto">
+        <div className="w-80 p-6 overflow-y-auto">
           <div className="mb-4">
-            <h2 className="text-lg font-semibold mb-2 text-white">Robots ({robots.length})</h2>
-            <p className="text-sm text-gray-400">
-              {robots.filter(r => r.status === 'idle').length} available
+            <h2 className="text-lg font-semibold mb-2 text-foreground">
+              Robots ({robots.length})
+            </h2>
+            <p className="text-sm text-foreground/60">
+              {robots.filter((r) => r.status === "idle").length} available
             </p>
           </div>
 
@@ -126,7 +131,7 @@ export default function Dashboard() {
         </div>
 
         {/* Map Area */}
-        <div className="flex-1 relative">
+        <div className="flex-1 relative p-4">
           <RobotMap
             robots={robots}
             selectedRobot={selectedRobot}
@@ -137,10 +142,7 @@ export default function Dashboard() {
         {/* Robot Details Panel */}
         <AnimatePresence>
           {selectedRobot && (
-            <RobotDetails
-              robot={selectedRobot}
-              onClose={closeRobotDetails}
-            />
+            <RobotDetails robot={selectedRobot} onClose={closeRobotDetails} />
           )}
         </AnimatePresence>
       </div>

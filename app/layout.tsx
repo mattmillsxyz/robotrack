@@ -1,8 +1,10 @@
 import type { Metadata } from "next";
 import "./globals.css";
 
+import AppProvider from "./components/AppProvider";
+
 export const metadata: Metadata = {
-  title: "Moxi Robotics Dashboard",
+  title: "Robodash",
   description: "Real-time delivery fleet monitoring dashboard",
 };
 
@@ -12,8 +14,12 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en">
-      <body>{children}</body>
+    <html lang="en" className="dark">
+      <body>
+        <AppProvider>
+          {children}
+        </AppProvider>
+      </body>
     </html>
   );
 }
