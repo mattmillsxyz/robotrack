@@ -41,17 +41,69 @@ export default function Dashboard() {
     }
   };
 
-  // Fetch robots data periodically
+  // Connect to Server-Sent Events for real-time updates
   useEffect(() => {
-    fetchRobots();
+    let eventSource: EventSource | null = null;
 
-    // Poll for updates every 200ms to match simulation speed
-    const interval = setInterval(() => {
-      fetchRobots();
-      setLastUpdate(new Date());
-    }, 200);
+    const connectSSE = () => {
+      try {
+        eventSource = new EventSource('/api/socket');
+        
+        eventSource.onmessage = (event) => {
+          try {
+            const message = JSON.parse(event.data);
+            
+            if (message.type === 'robots-update') {
+              const robotsData = message.data;
+              setRobots(robotsData);
+              setLastUpdate(new Date());
+              
+              // Update selected robot if it exists
+              setSelectedRobot(currentSelected => {
+                if (currentSelected) {
+                  const updatedSelectedRobot = robotsData.find((r: Robot) => r.id === currentSelected.id);
+                  return updatedSelectedRobot || currentSelected;
+                }
+                return currentSelected;
+              });
+              
+              setIsLoading(false);
+            }
+          } catch (error) {
+            console.error("Failed to parse SSE message:", error);
+          }
+        };
+        
+        eventSource.onerror = (error) => {
+          console.error("SSE connection error:", error);
+          // Reconnect after a delay
+          setTimeout(() => {
+            if (eventSource) {
+              eventSource.close();
+              connectSSE();
+            }
+          }, 5000);
+        };
+        
+        eventSource.onopen = () => {
+          console.log("SSE connection established");
+        };
+      } catch (error) {
+        console.error("Failed to connect to SSE:", error);
+        // Fallback to polling if SSE fails
+        fetchRobots();
+        const interval = setInterval(fetchRobots, 1000);
+        return () => clearInterval(interval);
+      }
+    };
 
-    return () => clearInterval(interval);
+    connectSSE();
+
+    return () => {
+      if (eventSource) {
+        eventSource.close();
+      }
+    };
   }, []);
 
   const handleRobotClick = (robot: Robot) => {
