@@ -27,11 +27,26 @@ jobs:
             # Pull latest changes
             git pull origin main
             
-            # Stop existing containers
-            docker-compose down
+            # Show current git status
+            echo "Current git commit:"
+            git log --oneline -1
             
-            # Build and start new containers
-            docker-compose up -d --build
+            # Stop existing containers
+            docker compose down
+            
+            # Remove all images to force fresh build
+            docker rmi $(docker images -q) 2>/dev/null || true
+            
+            # Build and start new containers (no cache)
+            docker compose up -d --build --no-cache
+            
+            # Show container status
+            echo "Container status:"
+            docker ps
+            
+            # Show app logs
+            echo "App logs:"
+            docker logs robotrack-app-1 --tail 20
             
             # Clean up old images
             docker image prune -f
