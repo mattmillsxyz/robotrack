@@ -11,29 +11,20 @@ export interface SimulationState {
   lastUpdate: number;
 }
 
-// Create Redis client using Vercel's approach
+// Create Redis client for DigitalOcean deployment
 const createRedisClient = async () => {
   try {
     // Check if we have environment variables for Redis
     const redisUrl = process.env.REDIS_URL;
-    const oidcToken = process.env.VERCEL_OIDC_TOKEN;
     
-    if (!redisUrl && !oidcToken) {
+    if (!redisUrl) {
       console.warn('No Redis configuration found. Using in-memory fallback.');
       return null;
     }
 
-    let client;
-    if (redisUrl) {
-      // Use direct Redis URL if available
-      client = createClient({ url: redisUrl });
-    } else {
-      // Use default configuration (Vercel will handle authentication)
-      client = createClient();
-    }
-    
+    const client = createClient({ url: redisUrl });
     await client.connect();
-    console.log('Connected to Vercel Redis successfully');
+    console.log('Connected to Redis successfully');
     return client;
   } catch (error) {
     console.error('Failed to create Redis client:', error);

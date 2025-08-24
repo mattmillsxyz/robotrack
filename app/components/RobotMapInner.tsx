@@ -46,7 +46,7 @@ function RobotRouting({ robots }: { robots: Robot[] }) {
             
             if (validCoordinates.length >= 2) {
               const routeCoordinates = validCoordinates.map(coord => L.latLng(coord[1], coord[0]));
-              const color = segment.type === 'charging' ? '#ff8c00' : robot.color; // Use robot color for delivery routes
+              const color = segment.type === 'charging' ? 'rgb(255, 226, 3)' : robot.color; // Use robot color for delivery routes
               const polyline = L.polyline(routeCoordinates, { 
                 color: color, 
                 opacity: 0.6, 
@@ -105,9 +105,13 @@ function LocationMarkers({ robots }: { robots: Robot[] }) {
         const marker = L.marker([station.lat, station.lng], {
           icon: L.divIcon({
             className: 'charging-marker',
-            html: `<div style="width: 12px; height: 12px; background: #ff8c00; border: 2px solid white; border-radius: 50%; box-shadow: 0 2px 4px rgba(0,0,0,0.3);"></div>`,
-            iconSize: [12, 12],
-            iconAnchor: [6, 6],
+            html: `<div style="width: 14px; height: 14px; display: flex; align-items: center; justify-content: center;">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="rgb(255, 226, 3)" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color:rgb(255, 226, 3);">
+                <polygon points="13,2 3,14 12,14 11,22 21,10 12,10 13,2"></polygon>
+              </svg>
+            </div>`,
+            iconSize: [16, 16],
+            iconAnchor: [8, 8],
           }),
         }).addTo(map);
         
@@ -126,9 +130,9 @@ function LocationMarkers({ robots }: { robots: Robot[] }) {
         const marker = L.marker([location.lat, location.lng], {
           icon: L.divIcon({
             className: 'sample-marker',
-            html: `<div style="width: 12px; height: 12px; background: #3b82f6; border: 2px solid white; border-radius: 50%; box-shadow: 0 2px 4px rgba(0,0,0,0.3);"></div>`,
-            iconSize: [12, 12],
-            iconAnchor: [6, 6],
+            html: `<div style="width: 10px; height: 10px; background: #3b82f6; border-radius: 50%; box-shadow: 0 2px 4px rgba(0,0,0,0.3);"></div>`,
+            iconSize: [10, 10],
+            iconAnchor: [5, 5],
           }),
         }).addTo(map);
         

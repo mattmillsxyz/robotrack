@@ -6,7 +6,10 @@
     "dev": "next dev --turbopack",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "next lint",
+    "dev:redis": "docker compose -f docker-compose.dev.yml up -d",
+    "dev:redis:down": "docker compose -f docker-compose.dev.yml down",
+    "dev:full": "yarn dev:redis && yarn dev"
   },
   "dependencies": {
     "@heroui/react": "^2.8.2",
@@ -14,7 +17,6 @@
     "@types/uuid": "^9.0.7",
     "framer-motion": "^12.23.12",
     "leaflet": "^1.9.4",
-    "leaflet-routing-machine": "^3.2.12",
     "lucide-react": "^0.294.0",
     "next": "15.4.5",
     "polyline": "^0.2.0",

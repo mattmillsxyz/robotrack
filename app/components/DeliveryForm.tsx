@@ -204,7 +204,7 @@ export default function DeliveryForm({
                   color="success"
                   onPress={addStop}
                   startContent={<Plus className="w-4 h-4" />}
-                  className="w-full"
+                  className="w-full mt-2"
                   aria-label="Add a new delivery stop"
                 >
                   Add Stop

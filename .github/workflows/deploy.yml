@@ -1,0 +1,37 @@
+name: Deploy to DigitalOcean
+
+on:
+  push:
+    branches: [main]
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        
+      - name: Deploy to DigitalOcean Droplet
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.DROPLET_IP }}
+          username: ${{ secrets.DROPLET_USER }}
+          key: ${{ secrets.DROPLET_SSH_KEY }}
+          script: |
+            # Navigate to app directory
+            cd /opt/robotrack
+            
+            # Pull latest changes
+            git pull origin main
+            
+            # Stop existing containers
+            docker-compose down
+            
+            # Build and start new containers
+            docker-compose up -d --build
+            
+            # Clean up old images
+            docker image prune -f
+            
+            echo "Deployment completed successfully!"
