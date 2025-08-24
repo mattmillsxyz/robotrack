@@ -787,6 +787,13 @@ class RobotSimulation {
     robot.deliveries.push(delivery);
     robot.status = 'delivering';
 
+    // Save delivery to history
+    try {
+      await PersistenceManager.addDelivery(delivery);
+    } catch (error) {
+      console.error('Failed to save delivery to history:', error);
+    }
+
     return delivery;
   }
 
@@ -808,6 +815,13 @@ class RobotSimulation {
     robot.routeProgress = 0;
     robot.deliveries.push(delivery);
     robot.status = 'delivering';
+
+    // Save delivery to history
+    try {
+      await PersistenceManager.addDelivery(delivery);
+    } catch (error) {
+      console.error('Failed to save delivery to history:', error);
+    }
 
     return delivery;
   }
