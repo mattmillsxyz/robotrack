@@ -59,6 +59,14 @@ body {
   filter: invert(100%) hue-rotate(180deg) brightness(95%) contrast(90%);
 }
 
+.leaflet-popup-content-wrapper {
+  background-color: #000;
+}
+
+.leaflet-popup-tip {
+  background-color: #000;
+}
+
 /* Marker tooltip styling */
 .marker-tooltip {
   background: rgba(0, 0, 0, 0.8) !important;

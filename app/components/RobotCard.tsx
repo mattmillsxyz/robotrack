@@ -1,32 +1,16 @@
 'use client';
 
 import { Robot } from '../types';
-import { Battery, MapPin, Clock, Package, Zap, Wrench, WifiOff, Bot } from 'lucide-react';
+import { Battery, MapPin, Clock } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { Card, CardBody, Chip, Progress } from "@heroui/react";
+import { getStatusIcon } from '../lib/utils';
 
 interface RobotCardProps {
   robot: Robot;
   isSelected: boolean;
   onClick: () => void;
 }
-
-const getStatusIcon = (status: Robot['status']) => {
-  switch (status) {
-    case 'idle':
-      return <Bot className="w-4 h-4 text-success" />;
-    case 'delivering':
-      return <MapPin className="w-4 h-4 text-success" />;
-    case 'charging':
-      return <Zap className="w-4 h-4 text-warning" />;
-    case 'maintenance':
-      return <Wrench className="w-4 h-4 text-warning" />;
-    case 'offline':
-      return <WifiOff className="w-4 h-4 text-danger" />;
-    default:
-      return <Package className="w-4 h-4 text-default-400" />;
-  }
-};
 
 const getStatusColor = (status: Robot['status']) => {
   switch (status) {
@@ -119,6 +103,7 @@ export default function RobotCard({ robot, isSelected, onClick }: RobotCardProps
                 color={getBatteryColor(robot.battery)}
                 size="sm"
                 className="w-full"
+                aria-label={`Battery level: ${Math.round(robot.battery)}%`}
               />
             </div>
 
@@ -171,6 +156,7 @@ export default function RobotCard({ robot, isSelected, onClick }: RobotCardProps
                             color="success"
                             size="sm"
                             className="w-full"
+                            aria-label={`Route progress: ${Math.round(robot.routeProgress * 100)}%`}
                           />
                         </div>
                       )}

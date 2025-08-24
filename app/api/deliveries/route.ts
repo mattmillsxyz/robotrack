@@ -115,7 +115,7 @@ export async function POST(request: NextRequest) {
       console.log('Full route journey calculated:', routeJourney.length, 'segments');
       
       // Create delivery with full route journey
-      const delivery = robotSimulation.createDeliveryWithRouteJourney(robotId, stops, routeJourney);
+      const delivery = await robotSimulation.createDeliveryWithRouteJourney(robotId, stops, routeJourney);
       if (!delivery) {
         console.log('Failed to create delivery with route journey');
         return NextResponse.json(
@@ -130,7 +130,7 @@ export async function POST(request: NextRequest) {
       console.error('Route calculation failed, creating delivery without route:', routeError);
       
       // Fallback: create delivery without route
-      const delivery = robotSimulation.createDelivery(robotId, stops);
+      const delivery = await robotSimulation.createDelivery(robotId, stops);
       if (!delivery) {
         console.log('Failed to create delivery without route');
         return NextResponse.json(

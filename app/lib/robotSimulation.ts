@@ -1,6 +1,7 @@
 import { Robot, Location, Delivery, Route, RouteSegment } from '../types';
 import { v4 as uuidv4 } from 'uuid'; // Still needed for delivery IDs
 import { SAMPLE_LOCATIONS, CHARGING_STATIONS } from './locations';
+import { PersistenceManager } from './persistence';
 
 
 
@@ -63,6 +64,24 @@ class RobotSimulation {
     this.initializeRobots();
   }
 
+  async initializeFromPersistence() {
+    try {
+      // Load robots from persistence
+      const savedRobots = await PersistenceManager.loadRobots();
+      if (savedRobots.length > 0) {
+        this.robots = new Map(savedRobots.map(robot => [robot.id, robot]));
+        console.log(`Loaded ${savedRobots.length} robots from persistence`);
+        return;
+      }
+      
+      // If no saved robots, initialize fresh
+      this.initializeRobots();
+    } catch (error) {
+      console.error('Failed to load from persistence, initializing fresh:', error);
+      this.initializeRobots();
+    }
+  }
+
   resetSimulation() {
     console.log('Resetting simulation...');
     this.stopSimulation();
@@ -108,15 +127,19 @@ class RobotSimulation {
     });
   }
 
-  startSimulation() {
+  async startSimulation() {
     if (this.simulationInterval) {
       console.log('Simulation already running');
       return;
     }
 
     console.log('Starting robot simulation...');
-    this.simulationInterval = setInterval(() => {
-      this.updateRobots();
+    
+    // Initialize from persistence if not already done
+    await this.initializeFromPersistence();
+    
+    this.simulationInterval = setInterval(async () => {
+      await this.updateRobots();
     }, 200); // Update every 200ms for smooth movement like Uber
     console.log('Robot simulation started successfully');
   }
@@ -128,7 +151,7 @@ class RobotSimulation {
     }
   }
 
-  private updateRobots() {
+  private async updateRobots() {
     const statusBreakdown = { idle: 0, delivering: 0, charging: 0, maintenance: 0, offline: 0 };
 
     this.robots.forEach((robot) => {
@@ -179,6 +202,13 @@ class RobotSimulation {
 
       statusBreakdown[robot.status]++;
     });
+
+    // Save robots to persistence periodically
+    try {
+      await PersistenceManager.saveRobots(Array.from(this.robots.values()));
+    } catch (error) {
+      console.error('Failed to save robots to persistence:', error);
+    }
   }
 
   private async calculateRoute(from: Location, to: Location): Promise<RoutePoint[]> {
@@ -712,7 +742,7 @@ class RobotSimulation {
     robot.deliveries.push(delivery);
   }
 
-  createDelivery(robotId: string, stops: Location[]): Delivery | null {
+  async createDelivery(robotId: string, stops: Location[]): Promise<Delivery | null> {
     const robot = this.robots.get(robotId);
     if (!robot || robot.status !== 'idle' || robot.battery < 90) return null; // Only if idle and fully charged
 
@@ -728,10 +758,17 @@ class RobotSimulation {
     robot.deliveries.push(delivery);
     robot.status = 'delivering';
 
+    // Save delivery to history
+    try {
+      await PersistenceManager.addDelivery(delivery);
+    } catch (error) {
+      console.error('Failed to save delivery to history:', error);
+    }
+
     return delivery;
   }
 
-  createDeliveryWithRoute(robotId: string, stops: Location[], route: Route): Delivery | null {
+  async createDeliveryWithRoute(robotId: string, stops: Location[], route: Route): Promise<Delivery | null> {
     const robot = this.robots.get(robotId);
     if (!robot || robot.status !== 'idle' || robot.battery < 90) return null;
 
@@ -753,7 +790,7 @@ class RobotSimulation {
     return delivery;
   }
 
-  createDeliveryWithRouteJourney(robotId: string, stops: Location[], routeJourney: RouteSegment[]): Delivery | null {
+  async createDeliveryWithRouteJourney(robotId: string, stops: Location[], routeJourney: RouteSegment[]): Promise<Delivery | null> {
     const robot = this.robots.get(robotId);
     if (!robot || robot.status !== 'idle' || robot.battery < 90) return null;
 

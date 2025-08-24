@@ -62,7 +62,43 @@ git clone <repository-url>
 cd robotrack
 ```
 
-### 2. Install Dependencies
+### 2. Set up Vercel Redis (for Production)
+
+To enable data persistence and multi-user support, you'll need to set up Vercel's Redis integration:
+
+1. **Link your project** (if not already done):
+   ```bash
+   vercel link
+   ```
+
+2. **Pull environment variables**:
+   ```bash
+   vercel env pull .env.development.local
+   ```
+
+3. **Create Redis Database** (in Vercel Dashboard):
+   - Go to [vercel.com/dashboard](https://vercel.com/dashboard)
+   - Select your `robotrack` project
+   - Go to the **"Storage"** tab
+   - Click **"Create Database"**
+   - Select **"Redis"** (Vercel's managed Redis)
+   - Choose your plan and **"Continue"**
+   - Enter a database name (e.g., "robotrack-redis")
+   - Select **"Create"**
+
+4. **Pull updated environment variables**:
+   ```bash
+   vercel env pull .env.development.local
+   ```
+
+5. **Deploy to Vercel**:
+   ```bash
+   vercel --prod
+   ```
+
+**Note**: For local development, the app will work without Redis but data won't persist between restarts.
+
+### 3. Install Dependencies
 
 ```bash
 yarn install
@@ -70,7 +106,7 @@ yarn install
 npm install
 ```
 
-### 3. Start the Development Server
+### 4. Start the Development Server
 
 ```bash
 yarn dev
@@ -80,7 +116,7 @@ npm run dev
 
 The application will be available at [http://localhost:3000](http://localhost:3000).
 
-### 4. Access the Dashboard
+### 5. Access the Dashboard
 
 Open your browser and navigate to the application URL. You'll see the Robotrack dashboard with:
 
@@ -137,7 +173,29 @@ robotrack/
 └── package.json              # Dependencies and scripts
 ```
 
-## 🔧 Development
+## 🔧 Development Guide
+
+### Data Persistence & Multi-User Support
+
+Robotrack now supports data persistence and multi-user scenarios:
+
+#### **Local Development**
+- Data is stored in memory only
+- All users see the same robot simulation state
+- Data resets when the server restarts
+
+#### **Production (Vercel)**
+- **Vercel Redis** stores all data persistently
+- **Shared State**: All users see the same robots and delivery history
+- **Persistence**: Data survives server restarts and deployments
+- **Delivery History**: Last 100 deliveries are preserved
+- **Robot State**: Current robot positions, battery, and status are maintained
+
+#### **Multi-User Behavior**
+- ✅ **Shared Robots**: All users see the same robot fleet
+- ✅ **Shared Deliveries**: All users see the same delivery history
+- ✅ **Real-time Updates**: Changes are reflected for all users via SSE
+- ✅ **No Conflicts**: Single source of truth for all data
 
 ### Available Scripts
 

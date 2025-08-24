@@ -1,32 +1,16 @@
 'use client';
 
-import { Robot } from '../types';
-import { Battery, MapPin, Clock, Package, Zap, Wrench, WifiOff, Calendar, Route, X } from 'lucide-react';
+import { Robot, Delivery } from '../types';
+import { Battery, MapPin, Clock, Package, Calendar, Route, X } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { Card, CardBody, Button, Chip, Progress, Divider } from "@heroui/react";
-// import { useState, useEffect } from 'react'; // No longer needed
+import { useState, useEffect } from 'react';
+import { getStatusIcon } from '../lib/utils';
 
 interface RobotDetailsProps {
   robot: Robot;
   onClose: () => void;
 }
-
-const getStatusIcon = (status: Robot['status']) => {
-  switch (status) {
-    case 'idle':
-      return <Package className="w-5 h-5 text-success" />;
-    case 'delivering':
-      return <MapPin className="w-5 h-5 text-primary" />;
-    case 'charging':
-      return <Zap className="w-5 h-5 text-warning" />;
-    case 'maintenance':
-      return <Wrench className="w-5 h-5 text-warning" />;
-    case 'offline':
-      return <WifiOff className="w-5 h-5 text-danger" />;
-    default:
-      return <Package className="w-5 h-5 text-default-400" />;
-  }
-};
 
 const getStatusColor = (status: Robot['status']) => {
   switch (status) {
@@ -55,10 +39,29 @@ const formatDate = (date: Date) => {
 };
 
 export default function RobotDetails({ robot, onClose }: RobotDetailsProps) {
+  const [deliveryHistory, setDeliveryHistory] = useState<Delivery[]>([]);
+  
   // Use the robot data directly from props (already updated by parent component)
   const lastUpdate = new Date(robot.lastUpdate);
   const timeSinceUpdate = Date.now() - lastUpdate.getTime();
   const isRecent = timeSinceUpdate < 10000; // 10 seconds
+
+  // Load delivery history
+  useEffect(() => {
+    const fetchDeliveryHistory = async () => {
+      try {
+        const response = await fetch('/api/deliveries/history');
+        if (response.ok) {
+          const history = await response.json();
+          setDeliveryHistory(history);
+        }
+      } catch (error) {
+        console.error('Failed to fetch delivery history:', error);
+      }
+    };
+
+    fetchDeliveryHistory();
+  }, []);
 
   return (
     <motion.div
@@ -96,7 +99,7 @@ export default function RobotDetails({ robot, onClose }: RobotDetailsProps) {
         <Card className="mb-6">
           <CardBody className="p-4">
             <div className="flex items-center gap-3 mb-4">
-              {getStatusIcon(robot.status)}
+              {getStatusIcon(robot.status, 'lg')}
               <div>
                 <h3 className="font-medium text-foreground">Status</h3>
                 <Chip 
@@ -124,6 +127,7 @@ export default function RobotDetails({ robot, onClose }: RobotDetailsProps) {
                     color={getBatteryColor(robot.battery)}
                     size="sm"
                     className="w-full"
+                    aria-label={`Battery level: ${Math.round(robot.battery)}%`}
                   />
                 </div>
               </div>
@@ -228,11 +232,11 @@ export default function RobotDetails({ robot, onClose }: RobotDetailsProps) {
               <h3 className="font-medium text-foreground">Delivery History</h3>
             </div>
             
-            {robot.deliveries.length === 0 ? (
+            {deliveryHistory.length === 0 ? (
               <p className="text-sm text-foreground/60">No delivery history</p>
             ) : (
               <div className="space-y-3 max-h-48 overflow-y-auto">
-                {robot.deliveries.slice(-5).reverse().map((delivery, index) => (
+                {deliveryHistory.slice(-5).reverse().map((delivery, index) => (
                   <div key={delivery.id}>
                     <div className="border-l-2 border-primary/30 pl-3">
                       <div className="flex items-center justify-between">
@@ -254,7 +258,7 @@ export default function RobotDetails({ robot, onClose }: RobotDetailsProps) {
                         {delivery.stops.length} stops • {formatDate(delivery.createdAt)}
                       </p>
                     </div>
-                    {index < robot.deliveries.slice(-5).length - 1 && (
+                    {index < deliveryHistory.slice(-5).length - 1 && (
                       <Divider className="my-2" />
                     )}
                   </div>

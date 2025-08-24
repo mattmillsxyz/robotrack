@@ -18,7 +18,7 @@ export async function GET(req: NextRequest) {
 
     // Initialize the robot simulation if not already started
     if (!simulationStarted) {
-      robotSimulation.startSimulation();
+      await robotSimulation.startSimulation();
       simulationStarted = true;
     }
 

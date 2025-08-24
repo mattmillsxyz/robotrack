@@ -5,7 +5,7 @@ import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet';
 import L from 'leaflet';
 import { Robot } from '../types';
 import { SAMPLE_LOCATIONS, CHARGING_STATIONS } from '../lib/locations';
-// import { Package, MapPin, Zap, Wrench, WifiOff } from 'lucide-react'; // Unused imports
+import { getStatusIcon } from '../lib/utils';
 
 interface RobotMapInnerProps {
   robots: Robot[];
@@ -236,18 +236,6 @@ function RobotMarkers({ robots, onRobotClick }: { robots: Robot[]; onRobotClick:
       return robot.color;
     };
 
-    // Calculate rotation based on movement direction
-    // const prevPos = prevPositions.current.get(robot.id); // Unused variable
-    // let rotation = 0; // Unused variable
-    
-    // if (prevPos) {
-    //   const dx = robot.location.lng - prevPos.lng;
-    //   const dy = robot.location.lat - prevPos.lat;
-    //   if (Math.abs(dx) > 0.00001 || Math.abs(dy) > 0.00001) {
-    //     rotation = Math.atan2(dy, dx) * 180 / Math.PI;
-    //   }
-    // }
-
     return L.divIcon({
       className: 'custom-robot-icon',
       html: `
@@ -276,63 +264,7 @@ function RobotMarkers({ robots, onRobotClick }: { robots: Robot[]; onRobotClick:
     });
   };
 
-  // const createChargingStationIcon = () => { // Unused function
-  //   return L.divIcon({
-  //     className: 'charging-station-icon',
-  //     html: `
-  //       <div style="
-  //         width: 16px;
-  //         height: 16px;
-  //         background: #f59e0b;
-  //         border: 2px solid white;
-  //         border-radius: 50%;
-  //         display: flex;
-  //         align-items: center;
-  //         justify-content: center;
-  //         box-shadow: 0 2px 8px rgba(0,0,0,0.3);
-  //         position: relative;
-  //       ">
-  //         <div style="
-  //           width: 6px;
-  //           height: 6px;
-  //           background: white;
-  //           border-radius: 50%;
-  //         "></div>
-  //       </div>
-  //     `,
-  //     iconSize: [16, 16],
-  //     iconAnchor: [8, 8],
-  //   });
-  // };
 
-  const getStatusIcon = (status: Robot['status']) => {
-    switch (status) {
-      case 'idle': return '🟢';
-      case 'delivering': return '🟢';
-      case 'charging': return '🟡';
-      case 'maintenance': return '🟠';
-      case 'offline': return '🔴';
-      default: return '⚪';
-    }
-  };
-
-  // Update previous positions (commented out due to unused variable)
-  // useEffect(() => {
-  //   robots.forEach(robot => {
-  //     prevPositions.current.set(robot.id, { lat: robot.location.lat, lng: robot.location.lng });
-  //   });
-  // }, []);
-
-  // Get charging stations from simulation
-  // const [chargingStations, setChargingStations] = useState<Location[]>([]); // Unused state
-
-  // useEffect(() => {
-  //   // Fetch charging stations
-  //   fetch('/api/charging-stations')
-  //     .then(res => res.json())
-  //     .then((stations: Location[]) => setChargingStations(stations))
-  //     .catch(() => setChargingStations([]));
-  // }, []);
 
   return (
     <>
@@ -353,47 +285,46 @@ function RobotMarkers({ robots, onRobotClick }: { robots: Robot[]; onRobotClick:
           }}
         >
           <Popup>
-            <div style={{ minWidth: '200px', padding: '8px', background: '#000', color: '#fff' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
-                <span>{getStatusIcon(robot.status)}</span>
-                <strong style={{ fontSize: '14px' }}>{robot.name}</strong>
+            <div className="min-w-[200px] text-foreground rounded-lg shadow-lg">
+              <div className="flex items-center gap-2 mb-3">
+                {getStatusIcon(robot.status)}
+                <strong className="text-sm font-medium">{robot.name}</strong>
               </div>
-              <div style={{ fontSize: '12px', lineHeight: '1.4' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px' }}>
-                  <span style={{ color: '#888' }}>Status:</span>
-                  <span style={{ 
-                    color: robot.status === 'idle' ? '#00ff00' : 
-                           robot.status === 'delivering' ? '#00ff00' : 
-                           robot.status === 'charging' ? '#f59e0b' : 
-                           robot.status === 'maintenance' ? '#f97316' : '#ef4444' 
-                  }}>
+              <div className="space-y-2 text-xs">
+                <div className="flex justify-between items-center">
+                  <span className="text-foreground/60">Status:</span>
+                  <span className={
+                    robot.status === 'idle' ? 'text-primary' : 
+                    robot.status === 'delivering' ? 'text-success' : 
+                    robot.status === 'charging' ? 'text-warning' : 
+                    robot.status === 'maintenance' ? 'text-warning' : 'text-danger'
+                  }>
                     {robot.status.charAt(0).toUpperCase() + robot.status.slice(1)}
                   </span>
                 </div>
-                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px' }}>
-                  <span style={{ color: '#888' }}>Battery:</span>
-                  <span>{Math.round(robot.battery)}%</span>
+                <div className="flex justify-between items-center">
+                  <span className="text-foreground/60">Battery:</span>
+                  <span className={
+                    robot.battery > 50 ? 'text-success' :
+                    robot.battery > 20 ? 'text-warning' : 'text-danger'
+                  }>
+                    {Math.round(robot.battery)}%
+                  </span>
                 </div>
                 {robot.status === 'delivering' && robot.speed > 0 && (
-                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px' }}>
-                    <span style={{ color: '#888' }}>Speed:</span>
-                    <span>{robot.speed.toFixed(1)} km/h</span>
+                  <div className="flex justify-between items-center">
+                    <span className="text-foreground/60">Speed:</span>
+                    <span className="text-primary">{robot.speed.toFixed(1)} km/h</span>
                   </div>
                 )}
-                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px' }}>
-                  <span style={{ color: '#888' }}>Location:</span>
-                  <span style={{ fontSize: '11px' }}>{robot.location.address}</span>
+                <div className="flex justify-between items-start">
+                  <span className="text-foreground/60">Location:</span>
+                  <span className="text-[11px] text-right max-w-[120px] truncate">{robot.location.address}</span>
                 </div>
                 {robot.currentDelivery && (
-                  <div style={{ 
-                    marginTop: '8px', 
-                    padding: '8px', 
-                    background: 'rgba(0, 255, 0, 0.1)', 
-                    border: '1px solid rgba(0, 255, 0, 0.2)', 
-                    borderRadius: '4px' 
-                  }}>
-                    <div style={{ fontSize: '11px', color: '#00ff00', fontWeight: '500' }}>Current Delivery</div>
-                    <div style={{ fontSize: '11px', color: '#888' }}>{robot.currentDelivery.stops.length} stops remaining</div>
+                  <div className="mt-3 p-2 bg-content1 rounded-md">
+                    <div className="text-[11px] text-success font-medium">Current Delivery</div>
+                    <div className="text-[11px] text-foreground/60">{robot.currentDelivery.stops.length} stops remaining</div>
                   </div>
                 )}
               </div>
@@ -406,8 +337,6 @@ function RobotMarkers({ robots, onRobotClick }: { robots: Robot[]; onRobotClick:
 }
 
 export default function RobotMapInner({ robots, selectedRobot, onRobotClick }: RobotMapInnerProps) {
-  // const [isMapReady, setIsMapReady] = useState(false); // Unused state
-
   return (
     <div className="w-full h-full rounded-xl overflow-hidden border border-gray-600/10 relative">
       <MapContainer
