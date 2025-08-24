@@ -93,6 +93,7 @@ export default function RobotDetails({ robot, onClose, isMobile = false }: Robot
             size="sm"
             onPress={onClose}
             className="text-foreground/60 hover:text-foreground"
+            aria-label="Close robot details"
           >
             <X className="w-4 h-4" />
           </Button>

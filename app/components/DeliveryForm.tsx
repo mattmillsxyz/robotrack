@@ -169,6 +169,7 @@ export default function DeliveryForm({
                     <Select
                       className="text-foreground"
                       placeholder="Choose a location..."
+                      aria-label={`Select location for stop ${index + 1}`}
                       onChange={(e) => updateStop(index, availableLocations[parseInt(e.target.value)])}
                       selectedKeys={[availableLocations.findIndex(loc => 
                         loc.lat === stop.lat && loc.lng === stop.lng
@@ -189,6 +190,7 @@ export default function DeliveryForm({
                       variant="light"
                       color="danger"
                       onPress={() => removeStop(index)}
+                      aria-label={`Remove stop ${index + 1}`}
                     >
                       <X className="w-4 h-4" />
                     </Button>
@@ -203,6 +205,7 @@ export default function DeliveryForm({
                   onPress={addStop}
                   startContent={<Plus className="w-4 h-4" />}
                   className="w-full"
+                  aria-label="Add a new delivery stop"
                 >
                   Add Stop
                 </Button>

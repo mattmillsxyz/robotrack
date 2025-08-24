@@ -191,6 +191,7 @@ export default function Dashboard() {
               size="sm"
               onPress={toggleSidebar}
               className="md:hidden"
+              aria-label="Toggle robot list sidebar"
             >
               <Menu className="w-5 h-5" />
             </Button>
@@ -217,6 +218,7 @@ export default function Dashboard() {
                 variant="light"
                 size="sm"
                 onPress={() => setShowSidebar(false)}
+                aria-label="Close robot list sidebar"
               >
                 <X className="w-5 h-5" />
               </Button>
@@ -292,6 +294,7 @@ export default function Dashboard() {
           size="lg"
           onPress={() => setShowDeliveryForm(true)}
           className="shadow-lg"
+          aria-label="Create new delivery"
         >
           <Plus className="w-6 h-6" />
         </Button>
