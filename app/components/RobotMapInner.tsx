@@ -344,6 +344,12 @@ function RobotMarkers({ robots, onRobotClick }: { robots: Robot[]; onRobotClick:
           icon={createRobotIcon(robot)}
           eventHandlers={{
             click: () => onRobotClick(robot),
+            mouseover: (e) => {
+              e.target.openPopup();
+            },
+            mouseout: (e) => {
+              e.target.closePopup();
+            },
           }}
         >
           <Popup>
@@ -395,27 +401,6 @@ function RobotMarkers({ robots, onRobotClick }: { robots: Robot[]; onRobotClick:
           </Popup>
         </Marker>
       ))}
-
-      {/* Charging station markers */}
-      {/* {chargingStations.map((station, index) => (
-        <Marker
-          key={`charging-${index}`}
-          position={[station.lat, station.lng]}
-          icon={createChargingStationIcon()}
-        >
-          <Popup>
-            <div style={{ minWidth: '150px', padding: '8px', background: '#000', color: '#fff' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
-                <span>⚡</span>
-                <strong style={{ fontSize: '14px' }}>Charging Station</strong>
-              </div>
-              <div style={{ fontSize: '12px', color: '#888' }}>
-                {station.address}
-              </div>
-            </div>
-          </Popup>
-        </Marker>
-      ))} */}
     </>
   );
 }
