@@ -4,7 +4,7 @@ import "./globals.css";
 import AppProvider from "./components/AppProvider";
 
 export const metadata: Metadata = {
-  title: "Robotrack",
+  title: "RoboTrack",
   description: "Real-time delivery fleet monitoring dashboard",
 };
 

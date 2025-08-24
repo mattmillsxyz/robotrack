@@ -1,8 +1,8 @@
-# Robotrack - Autonomous Robot Delivery Simulation
+# RoboTrack - Autonomous Robot Delivery Simulation
 
 A real-time robotics fleet management and delivery simulation platform built with Next.js, React, and WebSocket technology. Monitor autonomous robots as they navigate through a simulated city environment, manage deliveries, and track battery levels in real-time.
 
-![Robotrack Dashboard](https://img.shields.io/badge/Status-Live%20Simulation-green) ![Next.js](https://img.shields.io/badge/Next.js-15.4.5-black) ![React](https://img.shields.io/badge/React-19.1.0-blue) ![TypeScript](https://img.shields.io/badge/TypeScript-5.0-blue)
+![RoboTrack Dashboard](https://img.shields.io/badge/Status-Live%20Simulation-green) ![Next.js](https://img.shields.io/badge/Next.js-15.4.5-black) ![React](https://img.shields.io/badge/React-19.1.0-blue) ![TypeScript](https://img.shields.io/badge/TypeScript-5.0-blue)
 
 ## 🚀 Features
 
@@ -118,7 +118,7 @@ The application will be available at [http://localhost:3000](http://localhost:30
 
 ### 5. Access the Dashboard
 
-Open your browser and navigate to the application URL. You'll see the Robotrack dashboard with:
+Open your browser and navigate to the application URL. You'll see the RoboTrack dashboard with:
 
 - A sidebar showing all robots and their current status
 - An interactive map displaying robot locations
@@ -177,7 +177,7 @@ robotrack/
 
 ### Data Persistence & Multi-User Support
 
-Robotrack now supports data persistence and multi-user scenarios:
+RoboTrack now supports data persistence and multi-user scenarios:
 
 #### **Local Development**
 - Data is stored in memory only
@@ -328,4 +328,4 @@ This project is licensed under the MIT License - see the LICENSE file for detail
 
 ---
 
-**Robotrack** - Where autonomous delivery meets real-time monitoring. 🚀🤖
+**RoboTrack** - Where autonomous delivery meets real-time monitoring. 🚀🤖

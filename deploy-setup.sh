@@ -1,9 +1,9 @@
 #!/bin/bash
 
-# DigitalOcean Droplet Setup Script for Robotrack
+# DigitalOcean Droplet Setup Script for RoboTrack
 # Run this script on your new Ubuntu 22.04 droplet
 
-echo "🚀 Setting up Robotrack on DigitalOcean..."
+echo "🚀 Setting up RoboTrack on DigitalOcean..."
 
 # Update system
 echo "📦 Updating system packages..."

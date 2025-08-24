@@ -135,7 +135,7 @@ export default function Dashboard() {
       <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="text-center">
           <Spinner size="lg" color="primary" className="mb-4" />
-          <p className="text-foreground/60 animate-pulse">Loading Robotrack...</p>
+          <p className="text-foreground/60 animate-pulse">Loading RoboTrack...</p>
         </div>
       </div>
     );
@@ -149,7 +149,7 @@ export default function Dashboard() {
           <div className="flex items-center gap-2">
             <Bot className="w-6 h-6 md:w-8 md:h-8 text-green-500" />
             <h1 className="text-xl md:text-2xl font-bold text-foreground text-green-500">
-              Robotrack
+              RoboTrack
             </h1>
           </div>
 
