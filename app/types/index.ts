@@ -24,6 +24,7 @@ export interface Delivery {
   createdAt: Date;
   estimatedCompletion?: Date;
   route?: Route; // Optional route information
+  robotId: string;
 }
 
 export interface Robot {

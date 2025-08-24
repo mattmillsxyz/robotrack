@@ -154,7 +154,7 @@ class RobotSimulation {
   private async updateRobots() {
     const statusBreakdown = { idle: 0, delivering: 0, charging: 0, maintenance: 0, offline: 0 };
 
-    this.robots.forEach((robot) => {
+    for (const robot of this.robots.values()) {
       // Update battery based on status
       if (robot.status === 'delivering') {
         // Very slow battery drain during delivery (should last all day)
@@ -183,7 +183,7 @@ class RobotSimulation {
 
       // Update location if robot is moving
       if (robot.status === 'delivering' && robot.currentDelivery) {
-        this.updateRobotLocationWithRoute(robot);
+        await this.updateRobotLocationWithRoute(robot);
       } else if (robot.status === 'charging') {
         // Move towards charging station if not there yet
         this.moveTowardsChargingStation(robot);
@@ -201,7 +201,7 @@ class RobotSimulation {
       robot.lastUpdate = new Date();
 
       statusBreakdown[robot.status]++;
-    });
+    }
 
     // Save robots to persistence periodically
     try {
@@ -345,16 +345,16 @@ class RobotSimulation {
     return nearest;
   }
 
-  private updateRobotLocationWithRoute(robot: Robot) {
+  private async updateRobotLocationWithRoute(robot: Robot) {
     // Use route journey if available, otherwise fall back to legacy single route
     if (robot.routeJourney && robot.currentSegmentIndex !== undefined) {
-      this.updateRobotLocationWithRouteJourney(robot);
+      await this.updateRobotLocationWithRouteJourney(robot);
     } else if (robot.currentRoute && robot.routeProgress !== undefined) {
-      this.updateRobotLocationWithLegacyRoute(robot);
+      await this.updateRobotLocationWithLegacyRoute(robot);
     }
   }
 
-  private updateRobotLocationWithRouteJourney(robot: Robot) {
+  private async updateRobotLocationWithRouteJourney(robot: Robot) {
     if (!robot.currentDelivery || !robot.routeJourney || robot.currentSegmentIndex === undefined) return;
     
     const currentSegment = robot.routeJourney[robot.currentSegmentIndex];
@@ -432,6 +432,14 @@ class RobotSimulation {
         console.log(`${robot.name} completed entire route journey with battery at ${robot.battery.toFixed(2)}%`);
         robot.currentDelivery.status = 'completed';
         robot.status = 'idle';
+        
+        // Update delivery status in persistence
+        try {
+          await PersistenceManager.updateDelivery(robot.currentDelivery.id, 'completed');
+        } catch (error) {
+          console.error('Failed to update delivery status in persistence:', error);
+        }
+        
         robot.currentDelivery = undefined; // Clear the current delivery reference
         robot.routeJourney = undefined;
         robot.currentSegmentIndex = undefined;
@@ -473,7 +481,7 @@ class RobotSimulation {
     }
   }
 
-  private updateRobotLocationWithLegacyRoute(robot: Robot) {
+  private async updateRobotLocationWithLegacyRoute(robot: Robot) {
     // Legacy method for backward compatibility
     if (!robot.currentDelivery || robot.currentDelivery.stops.length === 0) return;
     if (!robot.currentRoute || robot.routeProgress === undefined) return;
@@ -518,6 +526,14 @@ class RobotSimulation {
       if (robot.currentDelivery.stops.length === 0) {
         robot.currentDelivery.status = 'completed';
         robot.status = 'idle';
+        
+        // Update delivery status in persistence
+        try {
+          await PersistenceManager.updateDelivery(robot.currentDelivery.id, 'completed');
+        } catch (error) {
+          console.error('Failed to update delivery status in persistence:', error);
+        }
+        
         robot.currentDelivery = undefined;
         robot.currentRoute = undefined;
         robot.isUnloading = false;
@@ -595,6 +611,14 @@ class RobotSimulation {
       if (robot.currentDelivery.stops.length === 0) {
         robot.currentDelivery.status = 'completed';
         robot.status = 'idle';
+        
+        // Update delivery status in persistence
+        try {
+          await PersistenceManager.updateDelivery(robot.currentDelivery.id, 'completed');
+        } catch (error) {
+          console.error('Failed to update delivery status in persistence:', error);
+        }
+        
         robot.currentDelivery = undefined;
         this.robotRoutes.delete(robot.id);
         console.log(`${robot.name} completed delivery`);
@@ -636,6 +660,14 @@ class RobotSimulation {
         if (robot.currentDelivery.stops.length === 0) {
           robot.currentDelivery.status = 'completed';
           robot.status = 'idle';
+          
+          // Update delivery status in persistence
+          try {
+            await PersistenceManager.updateDelivery(robot.currentDelivery.id, 'completed');
+          } catch (error) {
+            console.error('Failed to update delivery status in persistence:', error);
+          }
+          
           robot.currentDelivery = undefined;
           this.robotRoutes.delete(robot.id);
           console.log(`${robot.name} completed delivery`);
@@ -699,6 +731,7 @@ class RobotSimulation {
       status: 'in_progress',
       createdAt: new Date(),
       estimatedCompletion: new Date(Date.now() + 60000), // 1 minute
+      robotId: robot.id,
     };
     
     robot.currentDelivery = chargingDelivery;
@@ -736,6 +769,7 @@ class RobotSimulation {
       status: 'in_progress',
       createdAt: new Date(),
       estimatedCompletion: new Date(Date.now() + Math.random() * 300000 + 60000), // 1-6 minutes
+      robotId: robot.id,
     };
 
     robot.currentDelivery = delivery;
@@ -752,6 +786,7 @@ class RobotSimulation {
       status: 'in_progress',
       createdAt: new Date(),
       estimatedCompletion: new Date(Date.now() + Math.random() * 300000 + 60000),
+      robotId: robotId,
     };
 
     robot.currentDelivery = delivery;
@@ -779,6 +814,7 @@ class RobotSimulation {
       createdAt: new Date(),
       estimatedCompletion: new Date(Date.now() + route.duration * 1000), // Use actual route duration
       route: route,
+      robotId: robotId,
     };
 
     robot.currentDelivery = delivery;
@@ -807,6 +843,7 @@ class RobotSimulation {
       status: 'in_progress',
       createdAt: new Date(),
       estimatedCompletion: new Date(Date.now() + 300000), // 5 minutes estimate
+      robotId: robotId,
     };
 
     robot.currentDelivery = delivery;

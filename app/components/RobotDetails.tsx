@@ -46,14 +46,16 @@ export default function RobotDetails({ robot, onClose }: RobotDetailsProps) {
   const timeSinceUpdate = Date.now() - lastUpdate.getTime();
   const isRecent = timeSinceUpdate < 10000; // 10 seconds
 
-  // Load delivery history
+  // Load delivery history for this specific robot
   useEffect(() => {
     const fetchDeliveryHistory = async () => {
       try {
         const response = await fetch('/api/deliveries/history');
         if (response.ok) {
-          const history = await response.json();
-          setDeliveryHistory(history);
+          const allHistory = await response.json();
+          // Filter deliveries for this specific robot
+          const robotHistory = allHistory.filter((delivery: Delivery) => delivery.robotId === robot.id);
+          setDeliveryHistory(robotHistory);
         }
       } catch (error) {
         console.error('Failed to fetch delivery history:', error);
@@ -61,7 +63,7 @@ export default function RobotDetails({ robot, onClose }: RobotDetailsProps) {
     };
 
     fetchDeliveryHistory();
-  }, []);
+  }, [robot.id]);
 
   return (
     <motion.div
