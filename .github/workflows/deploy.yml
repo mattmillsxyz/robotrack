@@ -37,8 +37,9 @@ jobs:
             # Remove all images to force fresh build
             docker rmi $(docker images -q) 2>/dev/null || true
             
-            # Build and start new containers (no cache)
-            docker compose up -d --build --no-cache
+            # Build and start new containers (force rebuild)
+            docker compose build --no-cache
+            docker compose up -d
             
             # Show container status
             echo "Container status:"
