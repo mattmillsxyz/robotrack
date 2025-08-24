@@ -58,15 +58,15 @@ export default function RobotCard({ robot, isSelected, onClick }: RobotCardProps
         }}
         shadow="sm"
       >
-        <CardBody className="p-4">
-          <div className="flex items-center justify-between mb-3">
+        <CardBody className="p-3 md:p-4">
+          <div className="flex items-center justify-between mb-2 md:mb-3">
             <div className="flex items-center gap-2">
               <div 
                 className="w-3 h-3 rounded-full border border-white/20"
                 style={{ backgroundColor: robot.color }}
               />
               {getStatusIcon(robot.status)}
-              <h3 className="font-semibold text-sm text-foreground">{robot.name}</h3>
+              <h3 className="font-semibold text-xs md:text-sm text-foreground">{robot.name}</h3>
             </div>
             {/* <Chip 
               color={getStatusColor(robot.status)} 
@@ -75,7 +75,7 @@ export default function RobotCard({ robot, isSelected, onClick }: RobotCardProps
             /> */}
           </div>
 
-          <div className="space-y-3">
+          <div className="space-y-2 md:space-y-3">
             <div className="flex items-center justify-between text-xs">
               <span className="text-foreground/60">Status</span>
               <Chip 
@@ -88,7 +88,7 @@ export default function RobotCard({ robot, isSelected, onClick }: RobotCardProps
               </Chip>
             </div>
 
-            <div className="space-y-2">
+            <div className="space-y-1 md:space-y-2">
               <div className="flex items-center justify-between text-xs">
                 <span className="text-foreground/60">Battery</span>
                 <div className="flex items-center gap-1">

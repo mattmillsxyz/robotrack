@@ -10,6 +10,7 @@ import { getStatusIcon } from '../lib/utils';
 interface RobotDetailsProps {
   robot: Robot;
   onClose: () => void;
+  isMobile?: boolean;
 }
 
 const getStatusColor = (status: Robot['status']) => {
@@ -38,7 +39,7 @@ const formatDate = (date: Date) => {
   }).format(new Date(date));
 };
 
-export default function RobotDetails({ robot, onClose }: RobotDetailsProps) {
+export default function RobotDetails({ robot, onClose, isMobile = false }: RobotDetailsProps) {
   const [deliveryHistory, setDeliveryHistory] = useState<Delivery[]>([]);
   
   // Use the robot data directly from props (already updated by parent component)
@@ -67,12 +68,12 @@ export default function RobotDetails({ robot, onClose }: RobotDetailsProps) {
 
   return (
     <motion.div
-      initial={{ opacity: 0, x: 300 }}
-      animate={{ opacity: 1, x: 0 }}
-      exit={{ opacity: 0, x: 300 }}
-      className="w-80 h-full overflow-y-auto p-4"
+      initial={{ opacity: 0, x: isMobile ? 0 : 300, y: isMobile ? 50 : 0 }}
+      animate={{ opacity: 1, x: 0, y: 0 }}
+      exit={{ opacity: 0, x: isMobile ? 0 : 300, y: isMobile ? 50 : 0 }}
+      className={`${isMobile ? 'w-full h-full' : 'w-80 h-full'} overflow-y-auto p-4`}
     >
-      <div className="p-6 rounded-lg bg-content1">
+      <div className={`${isMobile ? 'h-full' : ''} p-4 md:p-6 rounded-lg bg-content1`}>
         {/* Header */}
         <div className="flex items-center justify-between mb-6">
           <div className="flex items-center gap-2">

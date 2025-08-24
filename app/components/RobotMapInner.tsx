@@ -20,36 +20,46 @@ function MapUpdater({ selectedRobot }: { selectedRobot?: Robot }) {
 }
 
 // Component to handle routing for robots
-function RobotRouting({ selectedRobot }: { selectedRobot?: Robot }) {
+function RobotRouting({ robots }: { robots: Robot[] }) {
   const map = useMap();
   const routeRefs = useRef<Map<string, L.Polyline>>(new Map());
-  const lastSelectedRobotRef = useRef<string | null>(null);
   
   useEffect(() => {
-    // Only redraw routes if the selected robot has actually changed
-    const currentRobotId = selectedRobot?.id || null;
-    if (currentRobotId === lastSelectedRobotRef.current) {
-      return; // Skip redraw if same robot is selected
-    }
-    
-    lastSelectedRobotRef.current = currentRobotId;
-    
     // Clear existing routes
     routeRefs.current.forEach((polyline) => {
       map.removeLayer(polyline);
     });
     routeRefs.current.clear();
 
-    // Only show routes for the selected robot
-    if (!selectedRobot) return;
-
-    const robot = selectedRobot;
-    if (robot.status === 'delivering' && robot.currentDelivery) {
-      // Use route journey if available, otherwise fall back to current route
-      if (robot.routeJourney && robot.currentSegmentIndex !== undefined) {
-        // Display the full route journey
-        robot.routeJourney.forEach((segment, index) => {
-          const validCoordinates = segment.route.coordinates.filter(coord => 
+    // Show routes for all delivering robots
+    robots.forEach((robot) => {
+      if (robot.status === 'delivering' && robot.currentDelivery) {
+        // Use route journey if available, otherwise fall back to current route
+        if (robot.routeJourney && robot.currentSegmentIndex !== undefined) {
+          // Display the full route journey
+          robot.routeJourney.forEach((segment, index) => {
+            const validCoordinates = segment.route.coordinates.filter(coord => 
+              coord && coord.length === 2 && 
+              typeof coord[0] === 'number' && typeof coord[1] === 'number' &&
+              Math.abs(coord[0]) > 0.1 || Math.abs(coord[1]) > 0.1
+            );
+            
+            if (validCoordinates.length >= 2) {
+              const routeCoordinates = validCoordinates.map(coord => L.latLng(coord[1], coord[0]));
+              const color = segment.type === 'charging' ? '#ff8c00' : robot.color; // Use robot color for delivery routes
+              const polyline = L.polyline(routeCoordinates, { 
+                color: color, 
+                opacity: 0.6, 
+                weight: 3 
+              }).addTo(map);
+              
+              const routeKey = `${robot.id}-segment-${index}`;
+              routeRefs.current.set(routeKey, polyline);
+            }
+          });
+        } else if (robot.currentRoute) {
+          // Legacy: display single route
+          const validCoordinates = robot.currentRoute.coordinates.filter(coord => 
             coord && coord.length === 2 && 
             typeof coord[0] === 'number' && typeof coord[1] === 'number' &&
             Math.abs(coord[0]) > 0.1 || Math.abs(coord[1]) > 0.1
@@ -57,37 +67,17 @@ function RobotRouting({ selectedRobot }: { selectedRobot?: Robot }) {
           
           if (validCoordinates.length >= 2) {
             const routeCoordinates = validCoordinates.map(coord => L.latLng(coord[1], coord[0]));
-            const color = segment.type === 'charging' ? '#ff8c00' : robot.color; // Use robot color for delivery routes
             const polyline = L.polyline(routeCoordinates, { 
-              color: color, 
-              opacity: 0.8, 
-              weight: 4 
+              color: robot.color, // Use robot color
+              opacity: 0.6, 
+              weight: 3 
             }).addTo(map);
             
-            const routeKey = `${robot.id}-segment-${index}`;
-            routeRefs.current.set(routeKey, polyline);
+            routeRefs.current.set(robot.id, polyline);
           }
-        });
-      } else if (robot.currentRoute) {
-        // Legacy: display single route
-        const validCoordinates = robot.currentRoute.coordinates.filter(coord => 
-          coord && coord.length === 2 && 
-          typeof coord[0] === 'number' && typeof coord[1] === 'number' &&
-          Math.abs(coord[0]) > 0.1 || Math.abs(coord[1]) > 0.1
-        );
-        
-        if (validCoordinates.length >= 2) {
-          const routeCoordinates = validCoordinates.map(coord => L.latLng(coord[1], coord[0]));
-          const polyline = L.polyline(routeCoordinates, { 
-            color: robot.color, // Use robot color
-            opacity: 0.8, 
-            weight: 4 
-          }).addTo(map);
-          
-          routeRefs.current.set(robot.id, polyline);
         }
       }
-    }
+    });
 
     return () => {
       routeRefs.current.forEach((polyline) => {
@@ -95,7 +85,7 @@ function RobotRouting({ selectedRobot }: { selectedRobot?: Robot }) {
       });
       routeRefs.current.clear();
     };
-  }, [selectedRobot?.id]); // Only depend on robot ID, not the entire map object
+  }, [robots]); // Depend on robots array instead of selected robot
 
   return null;
 }
@@ -351,7 +341,7 @@ export default function RobotMapInner({ robots, selectedRobot, onRobotClick }: R
           url="https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png"
         />
         <RobotMarkers robots={robots} onRobotClick={onRobotClick} />
-        <RobotRouting selectedRobot={selectedRobot} />
+        <RobotRouting robots={robots} />
         <LocationMarkers robots={robots} />
         <MapUpdater selectedRobot={selectedRobot} />
       </MapContainer>
