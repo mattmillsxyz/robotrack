@@ -8,6 +8,7 @@ services:
     environment:
       - NODE_ENV=production
       - REDIS_URL=redis://redis:6379
+      - REDIS_PASSWORD=${REDIS_PASSWORD}
     depends_on:
       - redis
     restart: unless-stopped
@@ -22,7 +23,7 @@ services:
     restart: unless-stopped
     volumes:
       - redis_data:/data
-    command: redis-server --appendonly yes --requirepass ${REDIS_PASSWORD:-your_secure_password_here}
+    command: redis-server --appendonly yes --requirepass ${REDIS_PASSWORD}
 
   nginx:
     image: nginx:alpine
