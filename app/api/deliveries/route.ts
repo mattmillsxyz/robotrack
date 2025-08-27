@@ -43,7 +43,7 @@ export async function POST(request: NextRequest) {
       const firstWaypoints = [robot.location, firstStop];
       console.log('Calculating route: robot → first stop');
       
-      const firstRouteResponse = await fetch(`${request.nextUrl.origin}/api/routes`, {
+      const firstRouteResponse = await fetch(`http://localhost:3000/api/routes`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ waypoints: firstWaypoints }),
@@ -68,7 +68,7 @@ export async function POST(request: NextRequest) {
         console.log(`Calculating route: stop ${i + 1} → stop ${i + 2}`);
         
         const waypoints = [fromStop, toStop];
-        const routeResponse = await fetch(`${request.nextUrl.origin}/api/routes`, {
+        const routeResponse = await fetch(`http://localhost:3000/api/routes`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ waypoints }),
@@ -95,7 +95,7 @@ export async function POST(request: NextRequest) {
       if (nearestChargingStation) {
         console.log('Calculating route: last stop → charging station');
         const chargingWaypoints = [lastStop, nearestChargingStation];
-        const chargingRouteResponse = await fetch(`${request.nextUrl.origin}/api/routes`, {
+        const chargingRouteResponse = await fetch(`http://localhost:3000/api/routes`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ waypoints: chargingWaypoints }),
