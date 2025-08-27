@@ -16,13 +16,27 @@ const createRedisClient = async () => {
   try {
     // Check if we have environment variables for Redis
     const redisUrl = process.env.REDIS_URL;
+    const redisPassword = process.env.REDIS_PASSWORD;
     
     if (!redisUrl) {
       console.warn('No Redis configuration found. Using in-memory fallback.');
       return null;
     }
 
-    const client = createClient({ url: redisUrl });
+    const client = createClient({ 
+      url: redisUrl,
+      password: redisPassword,
+      socket: {
+        reconnectStrategy: (retries) => {
+          if (retries > 10) {
+            console.error('Redis connection failed after 10 retries');
+            return false;
+          }
+          return Math.min(retries * 100, 3000);
+        }
+      }
+    });
+    
     await client.connect();
     console.log('Connected to Redis successfully');
     return client;

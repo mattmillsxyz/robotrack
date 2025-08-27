@@ -1,14 +1,13 @@
-version: '3.8'
-
 services:
   redis:
     image: redis:7-alpine
-    ports:
-      - "6379:6379"
+    # Remove port mapping to prevent external access
+    # ports:
+    #   - "6379:6379"
     restart: unless-stopped
     volumes:
       - redis_data:/data
-    command: redis-server --appendonly yes
+    command: redis-server --appendonly yes --requirepass ${REDIS_PASSWORD:-dev_password_123}
 
 volumes:
   redis_data:
