@@ -37,7 +37,8 @@ echo "🔥 Setting up firewall..."
 sudo ufw allow 22/tcp
 sudo ufw allow 80/tcp
 sudo ufw allow 443/tcp
-sudo ufw allow 3000/tcp
+# Remove port 3000 since nginx will proxy to it
+# sudo ufw allow 3000/tcp
 sudo ufw --force enable
 
 echo "✅ Setup complete!"
@@ -48,4 +49,4 @@ echo "2. Navigate to app: cd /opt/robotrack"
 echo "3. Start the app: docker-compose up -d"
 echo "4. View logs: docker-compose logs -f"
 echo ""
-echo "Your app will be available at: http://YOUR_DROPLET_IP:3000"
+echo "Your app will be available at: http://YOUR_DROPLET_IP"

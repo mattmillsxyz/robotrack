@@ -28,5 +28,5 @@ telnet localhost 6379 2>/dev/null || echo "✅ Redis is now secure!"
 
 echo ""
 echo "✅ Security fix applied!"
-echo "🔗 Your app is available at: http://$(curl -s ifconfig.me):3000"
+echo "🔗 Your app is available at: http://$(curl -s ifconfig.me)"
 echo "🔑 Redis password: $REDIS_PASSWORD"
