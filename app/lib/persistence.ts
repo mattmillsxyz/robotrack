@@ -36,7 +36,13 @@ const createRedisClient = async () => {
         }
       }
     });
-    
+
+    // node-redis throws on an 'error' event with no listener, which would take
+    // the whole server down instead of falling back to in-memory storage.
+    client.on('error', (error) => {
+      console.error('Redis client error:', error instanceof Error ? error.message : error);
+    });
+
     await client.connect();
     console.log('Connected to Redis successfully');
     return client;
@@ -47,13 +53,51 @@ const createRedisClient = async () => {
   }
 };
 
+// How long to stay on the in-memory fallback after a failed connection
+// attempt, before trying Redis again.
+const RECONNECT_COOLDOWN_MS = 30_000;
+
 export class PersistenceManager {
   private static client: Awaited<ReturnType<typeof createRedisClient>> | null = null;
+  private static connecting: ReturnType<typeof createRedisClient> | null = null;
+  private static nextRetryAt = 0;
 
   private static async getClient() {
-    if (!this.client) {
-      this.client = await createRedisClient();
+    if (this.client) {
+      return this.client;
     }
+
+    // createRedisClient() resolves to null when Redis is unreachable, and null
+    // is falsy -- so a plain `if (!this.client)` cache never takes hold and
+    // every caller opens another connection. Robots save every 200ms, so a
+    // Redis outage turned into a connection storm that pegged the CPU.
+    if (Date.now() < this.nextRetryAt) {
+      return null;
+    }
+
+    // Collapse concurrent callers onto a single connection attempt.
+    if (!this.connecting) {
+      this.connecting = createRedisClient().finally(() => {
+        this.connecting = null;
+      });
+    }
+
+    const client = await this.connecting;
+
+    if (!client) {
+      this.nextRetryAt = Date.now() + RECONNECT_COOLDOWN_MS;
+      return null;
+    }
+
+    // Once the reconnect strategy gives up the client is dead for good, so drop
+    // it and let the next call establish a fresh one after the cooldown.
+    client.on('end', () => {
+      console.warn('Redis connection closed, falling back to in-memory storage');
+      this.client = null;
+      this.nextRetryAt = Date.now() + RECONNECT_COOLDOWN_MS;
+    });
+
+    this.client = client;
     return this.client;
   }
 

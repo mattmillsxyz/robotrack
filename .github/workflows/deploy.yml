@@ -21,35 +21,41 @@ jobs:
           username: ${{ secrets.DROPLET_USER }}
           key: ${{ secrets.DROPLET_SSH_KEY }}
           script: |
-            # Navigate to app directory
+            set -euo pipefail
+
             cd /opt/robotrack
-            
-            # Pull latest changes
+
             git pull origin main
-            
-            # Show current git status
-            echo "Current git commit:"
+            echo "Deploying commit:"
             git log --oneline -1
-            
-            # Stop existing containers
-            docker compose down
-            
-            # Remove all images to force fresh build
-            docker rmi $(docker images -q) 2>/dev/null || true
-            
-            # Build and start new containers (force rebuild)
-            docker compose build --no-cache
-            docker compose up -d
-            
-            # Show container status
-            echo "Container status:"
-            docker ps
-            
-            # Show app logs
-            echo "App logs:"
-            docker logs robotrack-app-1 --tail 20
-            
-            # Clean up old images
+
+            # Build BEFORE stopping anything, and keep the previous image until
+            # the new one exists. The old script ran `docker rmi $(docker images
+            # -q)` first, so a build that failed (easy to do on a 1GB droplet)
+            # left the droplet with no image to fall back to and the site down.
+            # Cache is left enabled deliberately: --no-cache tripled build time
+            # and peak memory for no benefit on a box this size.
+            docker compose build
+
+            docker compose up -d --remove-orphans
+
+            # Only reclaim space once the new containers are actually running.
             docker image prune -f
-            
-            echo "Deployment completed successfully!"
+
+            # Fail the deploy loudly rather than reporting success on a site
+            # that is not serving.
+            echo "Waiting for app to become healthy..."
+            for i in $(seq 1 30); do
+              if curl -fsS -m 5 -o /dev/null http://127.0.0.1:3000/api/robots; then
+                echo "App is healthy."
+                docker ps
+                echo "Deployment completed successfully!"
+                exit 0
+              fi
+              sleep 5
+            done
+
+            echo "Deploy failed: app did not become healthy in 150s"
+            docker compose ps
+            docker compose logs --tail 40 app
+            exit 1

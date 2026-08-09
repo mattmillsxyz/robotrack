@@ -1,19 +1,29 @@
 #!/bin/bash
 
 # SSL Certificate Renewal Script for Docker nginx
+#
+# Uses certbot's webroot method: nginx keeps running and serves the ACME
+# challenge from /var/www/certbot. The old --standalone flow needed port 80
+# free, so it had to stop nginx first -- and when that stop failed, renewal
+# failed silently every night until the certificate expired.
 
-echo "🔄 Renewing SSL certificate..."
+set -euo pipefail
 
-# Stop nginx to free up port 80
-echo "🛑 Stopping nginx..."
-docker-compose stop nginx
+# cron runs with an unpredictable working directory, and docker compose
+# needs to find docker-compose.yml next to this script.
+cd "$(dirname "$0")"
 
-# Renew certificate
+# cron mail isn't configured on this droplet, so without a log a failed
+# renewal leaves no trace anywhere.
+exec >> /var/log/robotrack-ssl-renew.log 2>&1
+echo "===== $(date -Is) renewal run ====="
+
 echo "📜 Renewing certificate..."
-sudo certbot renew --standalone
+certbot renew --webroot -w /var/www/certbot --non-interactive
 
-# Start nginx with new certificate
-echo "🚀 Starting nginx..."
-docker-compose up -d nginx
+# nginx reads certificates at startup, so a renewal has no effect until it
+# reloads. Harmless on the days when nothing was due for renewal.
+echo "🔄 Reloading nginx..."
+docker compose exec -T nginx nginx -s reload
 
 echo "✅ SSL renewal complete!"
