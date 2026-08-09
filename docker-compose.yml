@@ -8,7 +8,11 @@ x-logging: &default-logging
 
 services:
   app:
-    build: .
+    # Built and pushed by CI, never built here. The droplet has 960MB RAM and
+    # under 2GB free disk, which is not enough for `yarn install` -- deploys
+    # died on ENOSPC. It only has to pull a ~200MB image now.
+    image: ${APP_IMAGE:-ghcr.io/mattmillsxyz/robotrack:latest}
+    pull_policy: always
     ports:
       - "127.0.0.1:3000:3000"  # Only bind to localhost
     environment:
@@ -20,8 +24,6 @@ services:
         condition: service_healthy
     restart: unless-stopped
     logging: *default-logging
-    volumes:
-      - ./logs:/app/logs
     # `restart: unless-stopped` only reacts to a process that exits. It does
     # nothing for a process that is still alive but no longer serving, which is
     # how this app sat wedged at 100% CPU for seven months. The healthcheck is
