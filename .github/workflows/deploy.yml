@@ -25,7 +25,14 @@ jobs:
 
             cd /opt/robotrack
 
-            git pull origin main
+            # Hard reset rather than `git pull`. The droplet is a deployment
+            # target, not a working copy: any file edited on the server (during
+            # an incident, say) makes `pull` abort with "local changes would be
+            # overwritten" and blocks every future deploy until someone SSHes in
+            # by hand. Untracked files like .env are left alone.
+            git fetch origin main
+            git reset --hard origin/main
+
             echo "Deploying commit:"
             git log --oneline -1
 
