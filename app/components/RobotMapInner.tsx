@@ -342,7 +342,10 @@ export default function RobotMapInner({ robots, selectedRobot, onRobotClick }: R
       >
         <TileLayer
           attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-          url="https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png"
+          // Carto's free basemaps.cartocdn.com tiles now return an "API KEY
+          // REQUIRED" watermark for every tile. OSM's own tiles need no key and
+          // are light, so the dark invert filter in globals.css still applies.
+          url="https://tile.openstreetmap.org/{z}/{x}/{y}.png"
         />
         <RobotMarkers robots={robots} onRobotClick={onRobotClick} />
         <RobotRouting robots={robots} />
