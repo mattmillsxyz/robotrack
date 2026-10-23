@@ -1,6 +1,6 @@
 # Build stage. The full toolchain, dev dependencies and yarn cache live here
 # and none of it reaches the final image.
-FROM node:20-alpine AS builder
+FROM node:24-alpine AS builder
 
 WORKDIR /app
 
@@ -14,7 +14,7 @@ RUN yarn build
 # 3.31GB to a couple hundred MB. The old single-stage image shipped the source,
 # the dev dependencies and the yarn cache, which is why `yarn install` could no
 # longer fit on the droplet's disk.
-FROM node:20-alpine AS runner
+FROM node:24-alpine AS runner
 
 WORKDIR /app
 

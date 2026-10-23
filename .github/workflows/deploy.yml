@@ -38,6 +38,10 @@ jobs:
         with:
           context: .
           push: true
+          # Re-pull the node base image on every build. A floating tag like
+          # node:24-alpine only picks up security patches if the build doesn't
+          # reuse a stale cached base layer.
+          pull: true
           tags: |
             ${{ env.IMAGE }}:latest
             ${{ env.IMAGE }}:${{ github.sha }}
