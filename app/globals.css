@@ -78,6 +78,13 @@ body {
   filter: invert(100%) hue-rotate(180deg) brightness(95%) contrast(90%);
 }
 
+/* OSM's standard tiles are colorful (green parks, orange roads, blue water) and
+   the invert above carries that color through. The Carto tiles this replaced
+   were nearly grayscale, so desaturate the tiles to keep the muted dark look. */
+.leaflet-tile {
+  filter: grayscale(1);
+}
+
 .leaflet-popup-content-wrapper {
   background-color: #000;
 }
